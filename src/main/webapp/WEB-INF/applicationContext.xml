@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:wss="http://jax-ws.dev.java.net/spring/servlet"
+       xmlns:context="http://www.springframework.org/schema/context" xmlns:ws="http://jax-ws.dev.java.net/spring/core"
+       xmlns:mvc="http://www.springframework.org/schema/mvc"
+       xsi:schemaLocation="
+      http://www.springframework.org/schema/beans
+      http://www.springframework.org/schema/beans/spring-beans-3.2.xsd
+      http://www.springframework.org/schema/context
+      http://www.springframework.org/schema/context/spring-context-3.2.xsd
+	http://jax-ws.dev.java.net/spring/core
+	http://jax-ws.dev.java.net/spring/core.xsd
+	http://jax-ws.dev.java.net/spring/servlet
+	http://jax-ws.dev.java.net/spring/servlet.xsd">
+
+    <bean id="appProperties" class="org.springframework.beans.factory.config.PropertiesFactoryBean">
+        <property name="singleton" value="true"/>
+        <property name="properties">
+            <props>
+                <prop key="brokers">${kafka.brokers}</prop>
+                <prop key="topic">${kafka.topic}</prop>
+                <prop key="group">${kafka.group}</prop>
+                <prop key="role">${kafka.role}</prop>
+                <prop key="id">${kafka.id}</prop>
+                <prop key="offsetReset">${kafka.offset.reset}</prop>
+                <prop key="pollingCount">${kafka.pollingCount}</prop>
+                <prop key="noMessageFoundCount">${kafka.noMessageFoundCount}</prop>
+                <prop key="transformationSize">${recordings.transformationSize}</prop>
+            </props>
+        </property>
+    </bean>
+
+    <bean id="myDs" class="org.apache.commons.dbcp2.BasicDataSource" scope="singleton">
+        <property name="username" value="${db.username}"/>
+        <property name="password" value="${db.password}"/>
+        <property name="url" value="${db.url}"/>
+        <property name="maxWaitMillis" value="60000"/>
+        <property name="defaultAutoCommit" value="true"/>
+        <property name="driverClassName" value="com.mysql.jdbc.Driver"/>
+    </bean>
+
+    <bean id="dbTemplate" class="org.springframework.jdbc.core.JdbcTemplate" scope="singleton">
+        <property name="dataSource" ref="myDs"/>
+    </bean>
+
+    <bean id="dbService" class="com.homegrown.util.DbService">
+        <property name="dbTemplate" ref="dbTemplate"/>
+    </bean>
+
+    <bean id="txManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager" scope="singleton">
+        <property name="dataSource" ref="myDs"/>
+    </bean>
+
+    <bean id="kafkaConsumer" class="com.homegrown.KafkaConsumer">
+        <property name="appProperties" ref="appProperties"/>
+        <property name="dbService" ref="dbService"/>
+    </bean>
+
+    <bean id="processor" class="com.homegrown.services.engine.Processor">
+        <property name="appProperties" ref="appProperties"/>
+        <property name="kafkaConsumer" ref="kafkaConsumer"/>
+        <property name="dbService" ref="dbService"/>
+    </bean>
+
+    <bean id="restService" class="com.homegrown.services.iface.RestService">
+        <property name="processor" ref="processor"/>
+    </bean>
+
+    <bean id="soapService" class="com.homegrown.services.iface.SoapService" scope="singleton">
+        <property name="processor" ref="processor"/>
+    </bean>
+
+    <!--bean id="webSocketServer" class="com.homegrown.websockets.WebSocketServer" scope="singleton">
+        <constructor-arg index="0" value="8025"/>
+    </bean-->
+
+    <!--wss:binding url="/soap">
+        <wss:service>
+            <ws:service bean="#soapService" impl="com.homegrown.services.iface.SoapService"/>
+        </wss:service>
+    </wss:binding-->
+
+    <!--context:component-scan base-package="com.homegrown.services.iface" />
+    <mvc:annotation-driven/-->
+</beans>

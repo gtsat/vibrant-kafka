@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:wss="http://jax-ws.dev.java.net/spring/servlet"
+       xmlns:context="http://www.springframework.org/schema/context" xmlns:ws="http://jax-ws.dev.java.net/spring/core"
+       xmlns:mvc="http://www.springframework.org/schema/mvc"
+       xsi:schemaLocation="
+      http://www.springframework.org/schema/beans
+      http://www.springframework.org/schema/beans/spring-beans-3.2.xsd
+      http://www.springframework.org/schema/context
+      http://www.springframework.org/schema/context/spring-context-3.2.xsd
+	http://jax-ws.dev.java.net/spring/core
+	http://jax-ws.dev.java.net/spring/core.xsd
+	http://jax-ws.dev.java.net/spring/servlet
+	http://jax-ws.dev.java.net/spring/servlet.xsd">
+
+    <bean id="appProperties" class="org.springframework.beans.factory.config.PropertiesFactoryBean">
+        <property name="singleton" value="true"/>
+        <property name="properties">
+            <props>
+                <prop key="brokers">${kafka.brokers}</prop>
+                <prop key="role">${kafka.role}</prop>
+                <prop key="id">${kafka.id}</prop>
+                <prop key="topic">${kafka.topic}</prop>
+                <prop key="sampleRate">${recordings.sampleRate}</prop>
+                <prop key="samplesNumber">${recordings.samplesNumber}</prop>
+                <prop key="recordingsDirectory">${recordings.directory}</prop>
+                <prop key="samplingFrequencyLo">${recordings.sampling.lo}</prop>
+                <prop key="samplingFrequencyHi">${recordings.sampling.hi}</prop>
+            </props>
+        </property>
+    </bean>
+</beans>

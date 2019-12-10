@@ -1,0 +1,4 @@
+<!-- TOMCAT -->
+<endpoints xmlns="http://java.sun.com/xml/ns/jax-ws/ri/runtime" version="2.0">
+    <endpoint name="soapService" implementation="com.homegrown.services.iface.SoapService" url-pattern="/soap" />
+</endpoints>
