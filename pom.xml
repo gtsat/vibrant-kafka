@@ -3,13 +3,13 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.homegrown</groupId>
 	<artifactId>vibrant-kafka</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>0.2.1-SNAPSHOT</version>
 	<packaging>war</packaging>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-		<springframework.version>4.3.20.RELEASE</springframework.version>
-		<jackson.version>2.9.5</jackson.version>
+		<springframework.version>4.3.25.RELEASE</springframework.version>
+		<jackson.version>2.10.1</jackson.version>
 	</properties>
 	<name>vibrant-kafka</name>
 	<url>http://maven.apache.org</url>
@@ -45,7 +45,7 @@
 		<dependency>
 			<groupId>org.apache.kafka</groupId>
 			<artifactId>kafka-clients</artifactId>
-			<version>1.1.0</version>
+			<version>2.3.0</version>
 		</dependency>
 		<dependency>
 			<groupId>com.fasterxml.jackson.core</groupId>
@@ -108,7 +108,7 @@
 			<artifactId>spring-framework-bom</artifactId>
 			<version>${springframework.version}</version>
 			<type>pom</type>
-			<scope>import</scope>
+			<scope>provided</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.jvnet.jax-ws-commons.spring</groupId>
@@ -207,7 +207,7 @@
 	</dependencies>
 	<profiles>
 		<profile>
-			<id>dev.consumer</id>
+			<id>local.consumer</id>
 			<build>
 				<plugins>
 					<plugin>
@@ -215,7 +215,7 @@
 						<artifactId>maven-war-plugin</artifactId>
 						<configuration>
 							<filters>
-								<filter>config/dev.consumer.properties</filter>
+								<filter>config/local.consumer.properties</filter>
 							</filters>
 						</configuration>
 					</plugin>
@@ -223,7 +223,7 @@
 			</build>
 		</profile>
 		<profile>
-			<id>dev.producer</id>
+			<id>local.producer</id>
 			<activation>
 				<activeByDefault>true</activeByDefault>
 			</activation>
@@ -234,7 +234,39 @@
 						<artifactId>maven-war-plugin</artifactId>
 						<configuration>
 							<filters>
-								<filter>config/dev.producer.properties</filter>
+								<filter>config/local.producer.properties</filter>
+							</filters>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+		<profile>
+			<id>homegrown.consumer</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-war-plugin</artifactId>
+						<configuration>
+							<filters>
+								<filter>config/homegrown.consumer.properties</filter>
+							</filters>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+		<profile>
+			<id>homegrown.producer</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-war-plugin</artifactId>
+						<configuration>
+							<filters>
+								<filter>config/homegrown.producer.properties</filter>
 							</filters>
 						</configuration>
 					</plugin>

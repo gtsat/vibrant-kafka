@@ -13,6 +13,7 @@ import org.springframework.context.support.ClassPathXmlApplicationContext;
 import org.springframework.context.ApplicationContext;
 import com.homegrown.consumer.ConsumerCreator;
 import com.homegrown.producer.ProducerCreator;
+import com.homegrown.sampling.Aliasing;
 import com.homegrown.sampling.Sampler;
 
 
@@ -25,9 +26,9 @@ public final class Main {
 		Properties appProperties = (Properties) ctx.getBean("appProperties");
 		String debugMsg = "App::";
 
-		String brokers = appProperties.getProperty("brokers");
-		String topic = appProperties.getProperty("topic");
 		String role = appProperties.getProperty("role");
+		String topic = appProperties.getProperty("topic");
+		String brokers = appProperties.getProperty("brokers");
 		String id = args.length>0?args[0]:appProperties.getProperty("id");
 		if (role == null || role.isEmpty()) {
 			logger.error(debugMsg+"No role is set in config file!!!");
@@ -48,7 +49,8 @@ public final class Main {
 
 				runConsumer (brokers, topic, id, group, offsetReset, pollingCount);
 			}else if (role.equalsIgnoreCase("producer")) {
-				runProducer (brokers, topic, id);
+				String category = args.length>1?args[1]:appProperties.getProperty("category");
+				runProducer (brokers, topic, category, id);
 			}else{
 				logger.error(debugMsg+"Unknown role: "+role+"!!!");
 			}
@@ -92,7 +94,7 @@ public final class Main {
 		//consumer.close();
 	}
 
-	private static void runProducer (String brokers,String topic,String id) {
+	private static void runProducer (String brokers,String topic, String category, String id) {
 		String debugMsg = "runProducer::";
 		Producer<String,byte[]> producer = ProducerCreator.createProducer (brokers,id);
 		Properties appProperties = (Properties) ctx.getBean("appProperties");
@@ -101,7 +103,8 @@ public final class Main {
 		try {
 			float samplingFrequencyLo = Float.parseFloat(appProperties.getProperty("samplingFrequencyLo"));
 			float samplingFrequencyHi = Float.parseFloat(appProperties.getProperty("samplingFrequencyHi"));
-			sampleRate = Aliasing.compute(samplingFrequencyLo,samplingFrequencyHi);
+			int transformationSize = Integer.parseInt(appProperties.getProperty("transformationSize"));
+			sampleRate = Aliasing.compute(samplingFrequencyLo,samplingFrequencyHi,transformationSize);
 		}catch (Exception e) {
 			for (StackTraceElement elem : e.getStackTrace()) {
 				logger.error(elem);
@@ -115,7 +118,7 @@ public final class Main {
 
 		while (true) {
 			byte[] sample = sampler.record (sampleRate,samplesNumber,recordingsDirectory);
-			final ProducerRecord<String,byte[]> record = new ProducerRecord<>(topic,id+"_"+sampleRate,sample);
+			final ProducerRecord<String,byte[]> record = new ProducerRecord<>(topic,id+"_"+sampleRate+"_"+category,sample);
 			try{
 				RecordMetadata metadata = producer.send(record).get();
 				System.out.println("Record sent with key '" + id + "' to partition " + metadata.partition() + " with offset " + metadata.offset());

@@ -42,6 +42,7 @@ public class KafkaConsumer {
     private TreeMap<String,Date> benchmarks = new TreeMap<>();
     private TreeMap<String,Integer> similarities = new TreeMap<>();
     private TreeMap<String,Float> frequencies = new TreeMap<>();
+    private TreeMap<String,String> categories = new TreeMap<>();
 
     public TreeMap<String,double[]> getTrains () {return trains;}
     public TreeMap<String,double[]> getTests () {return tests;}
@@ -51,6 +52,8 @@ public class KafkaConsumer {
     public TreeMap<String,Date> getBenchmarks () {return benchmarks;}
     public TreeMap<String,Integer> getSimilarities () {return similarities;}
     public TreeMap<String,Float> getFrequencies () {return frequencies;}
+    public TreeMap<String,String> getCategories () {return categories;}
+
 
     public synchronized void refresh () {
         if (consumer == null) {
@@ -99,9 +102,11 @@ public class KafkaConsumer {
                 System.out.println("Record partition: " + record.partition());
                 System.out.println("Record offset: " + record.offset());
 
-                int lindex = record.key().lastIndexOf("_");
-                String id = record.key().substring(0,lindex);
-                frequencies.put(id,Float.parseFloat(record.key().substring(lindex+1)));
+                String[] key = record.key().split("_");
+                String id = key[0];
+                try {categories.put(id,key[2]);}
+                catch (Exception e) {categories.put(id,appProperties.getProperty("defaultCategory"));}
+                frequencies.put(id, Float.parseFloat(key[1]));
                 double[] normalized = sampler.normalizeQuantiz(record.value());
                 double[] trainFFT = trainFFTs.get(id);
                 if (trainFFT == null) {
@@ -138,6 +143,7 @@ public class KafkaConsumer {
                 benchmarks.remove(entry.getKey());
                 similarities.remove(entry.getKey());
                 frequencies.remove(entry.getKey());
+                categories.remove(entry.getKey());
             }
         }
         //consumer.close();

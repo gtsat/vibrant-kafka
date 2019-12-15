@@ -30,5 +30,5 @@ CREATE TABLE similarities (
 
 COMMIT;
 
-INSERT INTO accounts VALUES ('gtsat','202cb962ac59075b964b07152d234b70','George','Tsatsanifos','6949290888','gtsatsanifos@gmail.com','16384','500','8','16384','500','8',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,1,1,NULL,0);
+INSERT INTO accounts VALUES ('gtsat','202cb962ac59075b964b07152d234b70','George','Tsatsanifos','6949290888','gtsatsanifos@gmail.com',CURRENT_TIMESTAMP,CURRENT_TIMESTAMP,1,1,'Greece');
 COMMIT;

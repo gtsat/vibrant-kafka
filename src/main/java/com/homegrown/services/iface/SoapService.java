@@ -39,7 +39,7 @@ public class SoapService implements ApplicationContextAware {
                     (
                             SimilaritiesListResponseDto.class,
                             AuthenticationResponseDto.class,
-                            SimilaritiesResponseDto.class,
+                            KafkaConsumerResponseDto.class,
                             UsersListResponseDto.class,
                             ResponseDto.class
                     );
@@ -80,7 +80,7 @@ public class SoapService implements ApplicationContextAware {
     }
 
     @WebMethod
-    public SimilaritiesResponseDto refreshSimilarities (
+    public KafkaConsumerResponseDto refreshSimilarities (
             @XmlElement(required=true)
             @WebParam(name="username") String username,
             @XmlElement(required=true)
@@ -96,7 +96,7 @@ public class SoapService implements ApplicationContextAware {
             for (StackTraceElement element : e.getStackTrace()) {
                 logger.error (debug + element);
             }
-            return new SimilaritiesResponseDto("ERROR","ERROR: "+e.getMessage());
+            return new KafkaConsumerResponseDto("ERROR","ERROR: "+e.getMessage());
         }finally{
             logger.info(debug + "END @ " + (System.currentTimeMillis()-start) + "msec.");
         }

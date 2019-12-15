@@ -6,7 +6,7 @@ import java.util.Date;
 import java.util.TreeMap;
 
 @XmlRootElement
-public class SimilaritiesResponseDto extends ResponseDto {
+public class KafkaConsumerResponseDto extends ResponseDto {
 
     private TreeMap<String,double[]> trains;
     private TreeMap<String,double[]> tests;
@@ -15,10 +15,11 @@ public class SimilaritiesResponseDto extends ResponseDto {
     private TreeMap<String,Date> timestamps;
     private TreeMap<String,Date> benchmarks;
     private TreeMap<String,Integer> similarities;
+    private TreeMap<String,String> categories;
     private TreeMap<String,Float> frequencies;
 
-    public SimilaritiesResponseDto(){}
-    public SimilaritiesResponseDto(String status, String message) {
+    public KafkaConsumerResponseDto(){}
+    public KafkaConsumerResponseDto(String status, String message) {
         super(status,message);
     }
 
@@ -69,4 +70,8 @@ public class SimilaritiesResponseDto extends ResponseDto {
     public TreeMap<String, Float> getFrequencies() {return frequencies;}
 
     public void setFrequencies(TreeMap<String, Float> frequencies) {this.frequencies = frequencies;}
+
+    public TreeMap<String, String> getCategories() {return categories;}
+
+    public void setCategories(TreeMap<String, String> categories) {this.categories = categories;}
 }

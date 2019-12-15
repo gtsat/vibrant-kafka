@@ -71,7 +71,7 @@ public class Processor { /*implements ApplicationContextAware {
         }
     }
 
-    public synchronized SimilaritiesResponseDto refreshSimilarities (String username, String password) {
+    public synchronized KafkaConsumerResponseDto refreshSimilarities (String username, String password) {
         String debug = "refreshSimilarities::username:"+username+". ";
         logger.info(debug+"START.");
         long start = System.currentTimeMillis();
@@ -80,28 +80,29 @@ public class Processor { /*implements ApplicationContextAware {
             if (auth.getStatus().equals("SUCCESS")){
                 int rows = dbService.touchUser(username);
                 if (rows != 1) {
-                    return new SimilaritiesResponseDto ("ERROR", "ERROR: Unable to update last usage date in app database (code="+rows+").");
+                    return new KafkaConsumerResponseDto("ERROR", "ERROR: Unable to update last usage date in app database (code="+rows+").");
                 }
                 kafkaConsumer.refresh();
-                SimilaritiesResponseDto responseDto = new SimilaritiesResponseDto("SUCCESS", "SUCCESS");
+                KafkaConsumerResponseDto responseDto = new KafkaConsumerResponseDto("SUCCESS", "SUCCESS");
                 responseDto.setSimilarities(kafkaConsumer.getSimilarities());
                 responseDto.setFrequencies(kafkaConsumer.getFrequencies());
                 responseDto.setTimestamps(kafkaConsumer.getTimestamps());
                 responseDto.setBenchmarks(kafkaConsumer.getBenchmarks());
+                responseDto.setCategories(kafkaConsumer.getCategories());
                 responseDto.setTrainFFTs(kafkaConsumer.getTrainFFTs());
                 responseDto.setTestFFTs(kafkaConsumer.getTestFFTs());
                 responseDto.setTrains(kafkaConsumer.getTrains());
                 responseDto.setTests(kafkaConsumer.getTests());
                 return responseDto;
             }else{
-                return new SimilaritiesResponseDto(auth.getStatus(),auth.getMessage());
+                return new KafkaConsumerResponseDto(auth.getStatus(),auth.getMessage());
             }
         }catch (Exception e){
             logger.error(debug+"EXCEPTION: "+e.getMessage());
             for (StackTraceElement element : e.getStackTrace()){
                 logger.error (debug+element);
             }
-            return new SimilaritiesResponseDto("ERROR","ERROR: "+e.getMessage());
+            return new KafkaConsumerResponseDto("ERROR","ERROR: "+e.getMessage());
         }finally{
             logger.info(debug+"END @ "+(System.currentTimeMillis()-start)+"msec.");
         }

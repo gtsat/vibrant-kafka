@@ -27,6 +27,7 @@
                 <prop key="pollingCount">${kafka.pollingCount}</prop>
                 <prop key="noMessageFoundCount">${kafka.noMessageFoundCount}</prop>
                 <prop key="transformationSize">${recordings.transformationSize}</prop>
+                <prop key="defaultCategory">${kafka.default.category}</prop>
             </props>
         </property>
     </bean>

@@ -1,4 +1,4 @@
-package com.homegrown;
+package com.homegrown.sampling;
 
 import org.apache.log4j.Logger;
 import org.springframework.context.ApplicationContext;
@@ -12,7 +12,7 @@ public class Aliasing {
     private static final Logger logger = Logger.getLogger (Aliasing.class);
     private static final Sampler sampler = new Sampler();
 
-    public static float compute (float fs1,float fs2) throws IOException{
+    public static float compute (float fs1, float fs2, int N1) throws IOException{
         String debugMsg = "compute::";
         ApplicationContext ctx = new ClassPathXmlApplicationContext("producerContext.xml");
         Properties appProperties = (Properties) ctx.getBean("appProperties");
@@ -27,7 +27,7 @@ public class Aliasing {
             }
             byte[] sample2 = sampler.record (fs2,samplesNumber,recordingsDirectory);
 
-            int N1 = Integer.parseInt(appProperties.getProperty("transformationSize"));
+            //int N1 = Integer.parseInt(appProperties.getProperty("transformationSize"));
             int N2 = (int)Math.ceil(N1*fs2/fs1);
 
             double[] fft1 = sampler.powerSpectrum(sampler.normalizeQuantiz(sample1),N1);

@@ -1,0 +1,40 @@
+
+=====================================
+ +---------------------------------+
+ | PRODUCT DEPLOYMENT INSTRUCTIONS |
+ +---------------------------------+
+=====================================
+
+
+FROM SERVER
+============
+Step 1. Download the source code.
+	git clone http://github.com/gtsat/vibrant-kafka
+
+Step 2. Change your working directory.
+	cd vibrant-kafka
+
+Step 3. Create web-archive for application server.
+	echo "export MAVEN_OPTS=-Dhttps.protocols=TLSv1,TLSv1.1,TLSv1.2" >> ~/.bashrc && mvn package -Pdev.consumer
+
+Step 4. Download Kafka binaries.
+	wget https://www.apache.org/dyn/closer.cgi?path=/kafka/2.3.1/kafka_2.12-2.3.1.tgz && tar -xvvzf kafka_2.12-2.3.1.tgz
+
+Step 5. Run Zookeeper and Kafka (add brokers and partitions for enhanced resiliency and robustness)
+	(i)  kafka_2.12-2.3.1/bin/zookeeper-server-start.sh kafka_2.12-2.3.1/config/zookeeper.properties
+	(ii) kafka_2.12-2.3.1/bin/kafka-server-start.sh kafka_2.12-2.3.1/config/server.properties
+
+Step 6. Deploy on Tomcat or Glassfish
+	${GLASSFISH_HOME}/bin/asadmin deploy vibrant-kafka.war
+
+
+FROM IoT DEVICE
+================
+Step 7. Download the project in your SD card from your Pi.
+		git clone http://github.com/gtsat/vibrant-kafka
+
+Step 8. Compile with different profile for IoT device.
+        mvn package -Pdev.producer
+
+Step 9. Run it.
+        cd target/vibrant-kafka/WEB-INF && java -cp "lib/*:classes/.:." com.homegrown.Main $HOSTNAME

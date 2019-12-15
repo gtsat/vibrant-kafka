@@ -55,7 +55,7 @@ public class RestService implements ApplicationContextAware {
     }
 
     @RequestMapping(method=RequestMethod.POST,value="/refreshSimilarities",produces="application/json")
-    public ResponseEntity<SimilaritiesResponseDto> refreshSimilarities (@RequestBody RequestDto request) {
+    public ResponseEntity<KafkaConsumerResponseDto> refreshSimilarities (@RequestBody RequestDto request) {
         String debug = "authenticate::username:"+request.getUsername()+". ";
         logger.info(debug + "START.");
         long start = System.currentTimeMillis();
@@ -66,7 +66,7 @@ public class RestService implements ApplicationContextAware {
             for (StackTraceElement element : e.getStackTrace()) {
                 logger.error (debug + element);
             }
-            return new ResponseEntity<>(new SimilaritiesResponseDto("ERROR","ERROR: "+e.getMessage()),null,HttpStatus.INTERNAL_SERVER_ERROR);
+            return new ResponseEntity<>(new KafkaConsumerResponseDto("ERROR","ERROR: "+e.getMessage()),null,HttpStatus.INTERNAL_SERVER_ERROR);
         }finally{
             logger.info(debug + "END @ " + (System.currentTimeMillis()-start) + "msec.");
         }

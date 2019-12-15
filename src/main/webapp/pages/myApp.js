@@ -2,8 +2,9 @@
     'use strict';
 
     angular.module('myApp', ['ngCookies'])
-        .constant('VERSION', '0.1.5')
+        .constant('VERSION', '0.2.1')
         .constant('REST_SERVICE_URL', 'http://localhost:8080/vibrant-kafka/rest/')
+        //.constant('REST_SERVICE_URL', 'http://homegrown.ddns.net:8181/vibrant-kafka/rest/')
         .service('restService', ['$http','$q','$log','REST_SERVICE_URL',restService])
         .controller('userController',['$scope','$cookieStore','$window','$log','restService','VERSION',userController])
         .controller('editController',['$scope','$cookieStore','$window','$log','restService','VERSION',editController])
@@ -24,8 +25,7 @@
                     restService.post('authenticate',{
                         'username': $scope.username,
                         'password': $scope.password
-                    })
-                        .then(
+                    }).then(
                         function (response) {
                             if (response.status === 'SUCCESS' &&
                                 response.user && response.user.username && response.user.password) {
@@ -56,10 +56,11 @@
         if (!userCookie) $window.location.href = 'index.html';
         $scope.username = userCookie.username;
         $scope.isAdmin = userCookie.admin;
-        $scope.selectedGuid = null;
         $scope.data = userCookie;
-        $scope.goEdit = function () {$window.location.href = 'edit.html';};
 
+        $scope.selectedCategory = 'All Categories';
+        $scope.dropdownCategories = ['All Categories'];
+        $scope.cardinalities = {'All Categories': 0};
 
         $scope.tests = null;
         $scope.trains = null;
@@ -67,6 +68,7 @@
         $scope.trainFFTs = null;
         $scope.timestamps = null;
         $scope.benchmarks = null;
+        $scope.categories = null;
         $scope.frequencies = null;
         $scope.similarities = null;
         $scope.alerts = {};
@@ -78,11 +80,9 @@
                 'producer': producer,
                 'threshold': threshold,
                 'limit': limit
-            })
-                .then(
+            }).then(
                 function (response) {
                     if (response.status === 'SUCCESS') {
-                        //$log.log (response);
                         $scope.alerts[producer] = response.similarities;
                     }else{
                         $log.log(response);
@@ -99,181 +99,199 @@
         }
 
         function refresh () {
-                        restService.post('refreshSimilarities', {
-                            'username': userCookie.username,
-                            'password': userCookie.password
-                        })
-                            .then(
-                            function (response) {
-                                if (response.status === 'SUCCESS') {
-                                    $scope.tests = response.tests;
-                                    $scope.trains = response.trains;
-                                    $scope.testFFTs = response.testFFTs;
-                                    $scope.trainFFTs = response.trainFFTs;
-                                    $scope.timestamps = response.timestamps;
-                                    $scope.benchmarks = response.benchmarks;
-                                    $scope.frequencies = response.frequencies;
-                                    $scope.similarities = response.similarities;
+            restService.post('refreshSimilarities', {
+                'username': userCookie.username,
+                'password': userCookie.password
+            }).then(
+                function (response) {
+                    if (response.status === 'SUCCESS') {
+                        $scope.tests = response.tests;
+                        $scope.trains = response.trains;
+                        $scope.testFFTs = response.testFFTs;
+                        $scope.trainFFTs = response.trainFFTs;
+                        $scope.timestamps = response.timestamps;
+                        $scope.benchmarks = response.benchmarks;
+                        $scope.categories = response.categories;
+                        $scope.frequencies = response.frequencies;
+                        $scope.similarities = response.similarities;
 
-                                    var N = 1024;
-                                    var producers = $('.producer'); //Object.keys($scope.similarities);
-                                    if (producers.length > 0) {
-                                        for (var i in producers) {
-                                            var producer = producers[i].id;
-                                            if (!producer) {
-                                                continue;
-                                            }
-                                            if (!producer || !$scope.similarities.hasOwnProperty(producer)) {
-                                                document.getElementById(producer).setAttribute('class', 'callout callout-gray producer');
-                                                console.log('NOT FOUND PRODUCER: ' + producer);
-                                                continue;
-                                            }
-                                            console.log('PROCESSING PRODUCER: ' + producer);
-                                            var freq = $scope.frequencies[producer];
-                                            updateProducer(producer, 70, 10);
-
-                                            var div = document.getElementById(producer);
-                                            if (div) {
-                                                if (parseInt($scope.similarities[producer]) >= 90) {
-                                                    div.setAttribute('class', 'callout callout-success producer');
-                                                } else if (parseInt($scope.similarities[producer]) >= 70) {
-                                                    div.setAttribute('class', 'callout callout-warning producer');
-                                                } else {
-                                                    div.setAttribute('class', 'callout callout-danger producer');
-                                                }
-
-                                                if (document.getElementById(producer + "Time")) {
-                                                    var x = [];
-                                                    for (var j = 0; j < $scope.tests[producer].length; j += 1) {
-                                                        x.push(j / freq);
-                                                    }
-                                                    var time = [{
-                                                        x: x,
-                                                        y: $scope.trains[producer],
-                                                        name: 'benchmark',
-                                                        type: 'scatter',
-                                                        mode: 'lines',
-                                                        line: {
-                                                            color: 'rgb(0,72,186)',
-                                                            width: 1
-                                                        }
-                                                    }, {
-                                                        x: x,
-                                                        y: $scope.tests[producer],
-                                                        name: 'current',
-                                                        type: 'scatter',
-                                                        mode: 'lines',
-                                                        line: {
-                                                            color: 'rgb(255,100,0)',
-                                                            width: 1
-                                                        }
-                                                    }];
-                                                    Plotly.newPlot(producer + "Time", time, {
-                                                        xaxis: {
-                                                            title: {
-                                                                text: 'Time (sec)',
-                                                                font: {
-                                                                    family: 'Courier New, monospace',
-                                                                    size: 15,
-                                                                    color: '#5f5f5f'
-                                                                }
-                                                            }
-                                                        },
-                                                        yaxis: {
-                                                            title: {
-                                                                text: 'Amplitude (V)',
-                                                                font: {
-                                                                    family: 'Courier New, monospace',
-                                                                    size: 15,
-                                                                    color: '#5f5f5f'
-                                                                }
-                                                            }
-                                                        },
-                                                        autosize: false,
-                                                        width: 600,
-                                                        height: 350,
-                                                        plot_bgcolor: '#c7c7c7',
-                                                        paper_bgcolor: '#c7c7c7' //'#1f1f1f'
-                                                    });
-                                                }
-
-                                                if (document.getElementById(producer + "Spectral")) {
-                                                    var X = [];
-                                                    for (var j = -.5; j < .5 - 1 / N; j += 1 / N) {
-                                                        X.push(j * freq);
-                                                    }
-                                                    for (var j = 0; j < $scope.tests[producer].length; j += 1) {
-                                                        x.push(j / freq);
-                                                    }
-                                                    var spectral = [{
-                                                        x: X,
-                                                        y: $scope.trainFFTs[producer],
-                                                        name: 'benchmark',
-                                                        type: 'scatter',
-                                                        mode: 'lines',
-                                                        line: {
-                                                            color: 'rgb(0,72,186)',
-                                                            width: 1
-                                                        }
-                                                    }, {
-                                                        x: X,
-                                                        y: $scope.testFFTs[producer],
-                                                        name: 'current',
-                                                        type: 'scatter',
-                                                        mode: 'lines',
-                                                        line: {
-                                                            color: 'rgb(255,100,0)',
-                                                            width: 1
-                                                        }
-                                                    }];
-                                                    Plotly.newPlot(producer + "Spectral", spectral, {
-                                                        xaxis: {
-                                                            title: {
-                                                                text: 'Frequency (Hz)',
-                                                                font: {
-                                                                    family: 'Courier New, monospace',
-                                                                    size: 15,
-                                                                    color: '#5f5f5f'
-                                                                }
-                                                            }
-                                                        },
-                                                        yaxis: {
-                                                            type: 'log',
-                                                            autorange: true,
-                                                            title: {
-                                                                text: 'Amplitude (V)',
-                                                                font: {
-                                                                    family: 'Courier New, monospace',
-                                                                    size: 15,
-                                                                    color: '#5f5f5f'
-                                                                }
-                                                            }
-                                                        },
-                                                        autosize: false,
-                                                        width: 600,
-                                                        height: 350,
-                                                        plot_bgcolor: '#c7c7c7',
-                                                        paper_bgcolor: '#c7c7c7' //#'#1f1f1f'
-                                                    });
-                                                }
-                                            }
-                                        }
-                                    }
-                                }else{
-                                    $log.log(response);
-                                    $scope.errorMessage = response.message;
-                                    $scope.errorMessageShow = true;
+                        var N = 1024;
+                        var producers = $('.producer');
+                        if (producers.length > 0) {
+                            for (var i in producers) {
+                                var producer = producers[i].id;
+                                if (!producer) {
+                                    continue;
                                 }
-                            },
-                            function (error) {
-                                $log.log(error);
-                                $scope.errorMessage = error;
-                                $scope.errorMessageShow = true;
+                                if (!producer || !$scope.similarities.hasOwnProperty(producer)) {
+                                    document.getElementById(producer).setAttribute('class', 'callout callout-gray producer');
+                                    console.log('NOT FOUND PRODUCER: ' + producer);
+                                    continue;
+                                }
+                                if ($scope.selectedCategory!='All Categories' && $scope.categories[producer]!=$scope.selectedCategory) {
+                                    console.log('SKIPPING PRODUCER: ' + producer+'('+$scope.selectedCategory+')');
+                                    continue;
+                                }
+                                console.log('PROCESSING PRODUCER: ' + producer);
+
+                                var freq = $scope.frequencies[producer];
+                                updateProducer(producer, 70, 10);
+
+                                var div = document.getElementById(producer);
+                                if (div) {
+                                    if (parseInt($scope.similarities[producer]) >= 90) {
+                                        div.setAttribute('class', 'callout callout-success producer');
+                                    } else if (parseInt($scope.similarities[producer]) >= 70) {
+                                        div.setAttribute('class', 'callout callout-warning producer');
+                                    } else {
+                                        div.setAttribute('class', 'callout callout-danger producer');
+                                    }
+
+                                    if (document.getElementById(producer + "Time")) {
+                                        var x = [];
+                                        for (var j = 0; j < $scope.tests[producer].length; j += 1) {
+                                            x.push(j / freq);
+                                        }
+                                        var time = [{
+                                            x: x,
+                                            y: $scope.trains[producer],
+                                            name: 'benchmark',
+                                            type: 'scatter',
+                                            mode: 'lines',
+                                            line: {
+                                                color: 'rgb(0,72,186)',
+                                                width: 1
+                                            }
+                                        }, {
+                                            x: x,
+                                            y: $scope.tests[producer],
+                                            name: 'current',
+                                            type: 'scatter',
+                                            mode: 'lines',
+                                            line: {
+                                                color: 'rgb(255,100,0)',
+                                                width: 1
+                                            }
+                                        }];
+                                        Plotly.newPlot(producer + "Time", time, {
+                                            xaxis: {
+                                                title: {
+                                                    text: 'Time (sec)',
+                                                    font: {
+                                                        family: 'Courier New, monospace',
+                                                        size: 15,
+                                                        color: '#5f5f5f'
+                                                    }
+                                                }
+                                            },
+                                            yaxis: {
+                                                title: {
+                                                    text: 'Amplitude (V)',
+                                                    font: {
+                                                        family: 'Courier New, monospace',
+                                                        size: 15,
+                                                        color: '#5f5f5f'
+                                                    }
+                                                }
+                                            },
+                                            autosize: false,
+                                            width: 600,
+                                            height: 350,
+                                            plot_bgcolor: '#c7c7c7',
+                                            paper_bgcolor: '#c7c7c7' //'#1f1f1f'
+                                        });
+                                    }
+
+                                    if (document.getElementById(producer + "Spectral")) {
+                                        var X = [];
+                                        for (var j = -.5; j < .5 - 1 / N; j += 1 / N) {
+                                            X.push(j * freq);
+                                        }
+                                        for (var j = 0; j < $scope.tests[producer].length; j += 1) {
+                                            x.push(j / freq);
+                                        }
+                                        var spectral = [{
+                                            x: X,
+                                            y: $scope.trainFFTs[producer],
+                                            name: 'benchmark',
+                                            type: 'scatter',
+                                            mode: 'lines',
+                                            line: {
+                                                color: 'rgb(0,72,186)',
+                                                width: 1
+                                            }
+                                        }, {
+                                            x: X,
+                                            y: $scope.testFFTs[producer],
+                                            name: 'current',
+                                            type: 'scatter',
+                                            mode: 'lines',
+                                            line: {
+                                                color: 'rgb(255,100,0)',
+                                                width: 1
+                                            }
+                                        }];
+                                        Plotly.newPlot(producer + "Spectral", spectral, {
+                                            xaxis: {
+                                                title: {
+                                                    text: 'Frequency (Hz)',
+                                                    font: {
+                                                        family: 'Courier New, monospace',
+                                                        size: 15,
+                                                        color: '#5f5f5f'
+                                                    }
+                                                }
+                                            },
+                                            yaxis: {
+                                                type: 'log',
+                                                autorange: true,
+                                                title: {
+                                                    text: 'Amplitude (V)',
+                                                    font: {
+                                                        family: 'Courier New, monospace',
+                                                        size: 15,
+                                                        color: '#5f5f5f'
+                                                    }
+                                                }
+                                            },
+                                            autosize: false,
+                                            width: 600,
+                                            height: 350,
+                                            plot_bgcolor: '#c7c7c7',
+                                            paper_bgcolor: '#c7c7c7' //#'#1f1f1f'
+                                        });
+                                    }
+                                }
                             }
-                        );
+                            $scope.dropdownCategories = ['All Categories'];
+                            var categoriesWithDuplicates = Object.values($scope.categories);
+                            $scope.cardinalities = {'All Categories': categoriesWithDuplicates.length};
+                            for (var c in categoriesWithDuplicates) {
+                                if (!$scope.dropdownCategories.includes(categoriesWithDuplicates[c])) {
+                                    $scope.dropdownCategories.push(categoriesWithDuplicates[c]);
+                                    $scope.cardinalities[categoriesWithDuplicates[c]] = 1;
+                                }else{
+                                    $scope.cardinalities[categoriesWithDuplicates[c]] += 1;
+                                }
+                            }
+                        }
+                    }else{
+                        $log.log(response);
+                        $scope.errorMessage = response.message;
+                        $scope.errorMessageShow = true;
+                    }
+                },
+                function (error) {
+                    $log.log(error);
+                    $scope.errorMessage = error;
+                    $scope.errorMessageShow = true;
+                }
+            );
         }
+        $scope.convertUnixTime = function (timestamp) {return new Date(timestamp).toISOString().replace(/[a-zA-Z]/g,' ');};
+        $scope.goEdit = function () {$window.location.href = 'edit.html';};
         refresh();
-        var intervalID = setInterval(function(){refresh();},2000);
+        var intervalID = setInterval(function(){refresh();},10000);
     }
 
     function registerController ($scope,$cookieStore,$window,$log,restService,VERSION) {
@@ -297,8 +315,7 @@
                     'msisdn': $scope.msisdn,
                     'email': $scope.email,
                     'region': concatenatedSelectedCountries
-                })
-                    .then(
+                }).then(
                     function (response) {
                         if (response.status === 'SUCCESS') {
                             $cookieStore.put('credentials', [$scope.username,$scope.password1,false]);
@@ -364,8 +381,7 @@
                 restService.post('getUsers', {
                     'username': userCookie.username,
                     'password': userCookie.password
-                })
-                    .then(
+                }).then(
                     function (response) {
                         if (response.status === 'SUCCESS') {
                             $scope.users = response.users;
@@ -394,8 +410,8 @@
             restService.post ('activateUser',{
                 'username': userCookie.username,
                 'password': userCookie.password,
-                'toActivate': userToActivate.username})
-                .then(
+                'toActivate': userToActivate.username
+            }).then(
                 function (response) {
                     if (response.status === 'SUCCESS') {
                         userToActivate.status = 1;
@@ -416,8 +432,8 @@
             restService.post ('disableUser',{
                 'username': userCookie.username,
                 'password': userCookie.password,
-                'toDisable': userToDisable.username})
-                .then(
+                'toDisable': userToDisable.username
+            }).then(
                 function (response) {
                     if (response.status === 'SUCCESS') {
                         userToDisable.status = 0;
@@ -475,8 +491,7 @@
                 'email': $scope.data.email,
                 'msisdn': $scope.data.msisdn,
                 'region': $scope.data.region
-            })
-                .then(
+            }).then(
                 function (response) {
                     if (response.status === 'SUCCESS') {
                         $window.location.href = 'user.html';
@@ -485,6 +500,7 @@
                         $scope.errorMessage= response.message;
                         $scope.errorMessageShow = true;
                     }
+                    $cookieStore.put('credentials',$scope.data);
                     document.getElementsByClassName('modal')[0].style.display = 'none';
                 },
                 function (error) {

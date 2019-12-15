@@ -22,11 +22,13 @@
                 <prop key="role">${kafka.role}</prop>
                 <prop key="id">${kafka.id}</prop>
                 <prop key="topic">${kafka.topic}</prop>
+                <prop key="category">${kafka.category}</prop>
                 <prop key="sampleRate">${recordings.sampleRate}</prop>
                 <prop key="samplesNumber">${recordings.samplesNumber}</prop>
                 <prop key="recordingsDirectory">${recordings.directory}</prop>
                 <prop key="samplingFrequencyLo">${recordings.sampling.lo}</prop>
                 <prop key="samplingFrequencyHi">${recordings.sampling.hi}</prop>
+                <prop key="transformationSize">${recordings.transformationSize}</prop>
             </props>
         </property>
     </bean>
