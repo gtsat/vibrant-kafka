@@ -37,9 +37,12 @@
         <url-pattern>/rest/disableUser</url-pattern>
         <url-pattern>/rest/activateUser</url-pattern>
         <url-pattern>/rest/authenticate</url-pattern>
+        <url-pattern>/rest/updateConsumer</url-pattern>
         <url-pattern>/rest/updateUserDetails</url-pattern>
-        <url-pattern>/rest/refreshSimilarities</url-pattern>
-        <url-pattern>/rest/getSimilaritiesByProducer</url-pattern>
+        <url-pattern>/rest/resetAllProducers</url-pattern>
+        <url-pattern>/rest/resetProducer</url-pattern>
+        <url-pattern>/rest/clearEvents</url-pattern>
+        <url-pattern>/rest/getEvents</url-pattern>
     </servlet-mapping>
 
     <listener>

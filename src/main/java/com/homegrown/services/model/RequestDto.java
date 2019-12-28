@@ -20,6 +20,7 @@ public class RequestDto implements Serializable{
     protected String toDisable;
 
     protected String producer;
+    protected String category;
     protected Integer threshold;
     protected Integer limit;
 
@@ -78,4 +79,8 @@ public class RequestDto implements Serializable{
     public Integer getLimit() {return limit;}
 
     public void setLimit(Integer limit) {this.limit = limit;}
+
+    public String getCategory() {return category;}
+
+    public void setCategory(String category) {this.category = category;}
 }

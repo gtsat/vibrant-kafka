@@ -2,9 +2,9 @@
     'use strict';
 
     angular.module('myApp', ['ngCookies'])
-        .constant('VERSION', '0.2.1')
+        .constant('VERSION', '0.3.9')
         .constant('REST_SERVICE_URL', 'http://localhost:8080/vibrant-kafka/rest/')
-        //.constant('REST_SERVICE_URL', 'http://homegrown.ddns.net:8181/vibrant-kafka/rest/')
+        //.constant('REST_SERVICE_URL', 'http://homegrown.ddns.net:8080/vibrant-kafka/rest/')
         .service('restService', ['$http','$q','$log','REST_SERVICE_URL',restService])
         .controller('userController',['$scope','$cookieStore','$window','$log','restService','VERSION',userController])
         .controller('editController',['$scope','$cookieStore','$window','$log','restService','VERSION',editController])
@@ -19,6 +19,7 @@
         .controller('validateCtrl', ['$scope','$cookieStore','$window','$log','restService','VERSION',
             function($scope,$cookieStore,$window,$log,restService,VERSION) {
                 $scope.version = VERSION;
+                $scope.errorMessage = '';
                 $scope.login = function () {
                     $log.log ('User '+$scope.username+' tries to log in...');
 
@@ -36,7 +37,7 @@
                                 $log.log('Unsuccessful login attempt for user: ' + $scope.username);
                                 $scope.username = '';
                                 $scope.password = '';
-                                $scope.errorMessage= response.message;
+                                $scope.errorMessage = $scope.errorMessage.concat('\n'+response.message);
                                 $scope.errorMessageShow = true;
                             }
                         },
@@ -52,6 +53,7 @@
 
     function userController ($scope,$cookieStore,$window,$log,restService,VERSION) {
         $scope.version = VERSION;
+        $scope.errorMessage = '';
         var userCookie = $cookieStore.get('credentials');
         if (!userCookie) $window.location.href = 'index.html';
         $scope.username = userCookie.username;
@@ -69,12 +71,81 @@
         $scope.timestamps = null;
         $scope.benchmarks = null;
         $scope.categories = null;
+        $scope.motionUrls = null;
         $scope.frequencies = null;
         $scope.similarities = null;
-        $scope.alerts = {};
+        $scope.events = {};
+
+        $scope.resetAllProducers = function () {
+            restService.post('resetAllProducers', {
+                'username': userCookie.username,
+                'password': userCookie.password
+            }).then(
+                function (response) {
+                    if (response.status === 'SUCCESS') {
+                        ;
+                    }else{
+                        $log.log(response);
+                        $scope.errorMessage = $scope.errorMessage.concat('\n'+response.message);
+                        $scope.errorMessageShow = true;
+                    }
+                },
+                function (error) {
+                    $log.log(error);
+                    $scope.errorMessage = $scope.errorMessage.concat('\n'+error.data);
+                    $scope.errorMessageShow = true;
+                }
+            );
+        };
+
+        $scope.resetProducer = function (producer) {
+            restService.post('resetProducer', {
+                'username': userCookie.username,
+                'password': userCookie.password,
+                'producer': producer
+            }).then(
+                function (response) {
+                    if (response.status === 'SUCCESS') {
+                        ;
+                    }else{
+                        $log.log(response);
+                        $scope.errorMessage = $scope.errorMessage.concat('\n'+response.message);
+                        $scope.errorMessageShow = true;
+                    }
+                },
+                function (error) {
+                    $log.log(error);
+                    $scope.errorMessage = $scope.errorMessage.concat('\n'+error.data);
+                    $scope.errorMessageShow = true;
+                }
+            );
+        };
+
+        $scope.clearEvents = function (producer) {
+            restService.post('clearEvents', {
+                'username': userCookie.username,
+                'password': userCookie.password,
+                'producer': producer
+            }).then(
+                function (response) {
+                    if (response.status === 'SUCCESS') {
+                        ;
+                    }else{
+                        $log.log(response);
+                        $scope.errorMessage = $scope.errorMessage.concat('\n'+response.message);
+                        $scope.errorMessageShow = true;
+                    }
+                },
+                function (error) {
+                    $log.log(error);
+                    $scope.errorMessage = $scope.errorMessage.concat('\n'+error.data);
+                    $scope.errorMessageShow = true;
+                }
+            );
+        };
 
         function updateProducer (producer,threshold,limit) {
-            restService.post('getSimilaritiesByProducer', {
+            restService.post('getEvents', {
                 'username': userCookie.username,
                 'password': userCookie.password,
                 'producer': producer,
@@ -83,25 +154,26 @@
             }).then(
                 function (response) {
                     if (response.status === 'SUCCESS') {
-                        $scope.alerts[producer] = response.similarities;
+                        $scope.events[producer] = response.events;
                     }else{
                         $log.log(response);
-                        $scope.errorMessage = response.message;
+                        $scope.errorMessage = $scope.errorMessage.concat('\n'+response.message);
                         $scope.errorMessageShow = true;
                     }
                 },
                 function (error) {
                     $log.log(error);
-                    $scope.errorMessage = error;
+                    $scope.errorMessage = $scope.errorMessage.concat('\n'+error.data);
                     $scope.errorMessageShow = true;
                 }
             );
         }
 
         function refresh () {
-            restService.post('refreshSimilarities', {
+            restService.post('updateConsumer', {
                 'username': userCookie.username,
-                'password': userCookie.password
+                'password': userCookie.password,
+                'category': ($scope.selectedCategory != 'All Categories' ? $scope.selectedCategory : null)
             }).then(
                 function (response) {
                     if (response.status === 'SUCCESS') {
@@ -114,12 +186,14 @@
                         $scope.categories = response.categories;
                         $scope.frequencies = response.frequencies;
                         $scope.similarities = response.similarities;
+                        $scope.motionUrls = response.motionUrls;
 
-                        var N = 1024;
+                        var N = 256;
                         var producers = $('.producer');
                         if (producers.length > 0) {
                             for (var i in producers) {
                                 var producer = producers[i].id;
+                                $log.log ("motionUrls["+producer+"]: "+$scope.motionUrls[producer]);
                                 if (!producer) {
                                     continue;
                                 }
@@ -135,7 +209,7 @@
                                 console.log('PROCESSING PRODUCER: ' + producer);
 
                                 var freq = $scope.frequencies[producer];
-                                updateProducer(producer, 70, 10);
+                                updateProducer(producer, 70, 12);
 
                                 var div = document.getElementById(producer);
                                 if (div) {
@@ -149,7 +223,7 @@
 
                                     if (document.getElementById(producer + "Time")) {
                                         var x = [];
-                                        for (var j = 0; j < $scope.tests[producer].length; j += 1) {
+                                        for (var j = -($scope.tests[producer].length>>1); j < $scope.tests[producer].length>>1; j += 1) {
                                             x.push(j / freq);
                                         }
                                         var time = [{
@@ -175,16 +249,8 @@
                                         }];
                                         Plotly.newPlot(producer + "Time", time, {
                                             xaxis: {
-                                                title: {
-                                                    text: 'Time (sec)',
-                                                    font: {
-                                                        family: 'Courier New, monospace',
-                                                        size: 15,
-                                                        color: '#5f5f5f'
-                                                    }
-                                                }
-                                            },
-                                            yaxis: {
+                                                autorange: true,
+                                                automargin: true,
                                                 title: {
                                                     text: 'Amplitude (V)',
                                                     font: {
@@ -194,12 +260,26 @@
                                                     }
                                                 }
                                             },
-                                            autosize: false,
-                                            width: 600,
-                                            height: 350,
+                                            yaxis: {
+                                                type: 'log',
+                                                scaleratio: 1.0,
+                                                autorange: true,
+                                                automargin: true,
+                                                title: {
+                                                    text: 'Occurrences (#Samples)',
+                                                    font: {
+                                                        family: 'Courier New, monospace',
+                                                        size: 15,
+                                                        color: '#5f5f5f'
+                                                    }
+                                                }
+                                            },
+                                            autosize: true,
+                                            //width: 600,
+                                            //height: 350,
                                             plot_bgcolor: '#c7c7c7',
                                             paper_bgcolor: '#c7c7c7' //'#1f1f1f'
-                                        });
+                                        },{responsive: true});
                                     }
 
                                     if (document.getElementById(producer + "Spectral")) {
@@ -233,6 +313,8 @@
                                         }];
                                         Plotly.newPlot(producer + "Spectral", spectral, {
                                             xaxis: {
+                                                autorange: true,
+                                                automargin: true,
                                                 title: {
                                                     text: 'Frequency (Hz)',
                                                     font: {
@@ -244,7 +326,9 @@
                                             },
                                             yaxis: {
                                                 type: 'log',
+                                                scaleratio:1.0,
                                                 autorange: true,
+                                                automargin: true,
                                                 title: {
                                                     text: 'Amplitude (V)',
                                                     font: {
@@ -254,12 +338,12 @@
                                                     }
                                                 }
                                             },
-                                            autosize: false,
-                                            width: 600,
-                                            height: 350,
+                                            autosize: true,
+                                            //width: 600,
+                                            //height: 350,
                                             plot_bgcolor: '#c7c7c7',
                                             paper_bgcolor: '#c7c7c7' //#'#1f1f1f'
-                                        });
+                                        },{responsive: true});
                                     }
                                 }
                             }
@@ -277,25 +361,26 @@
                         }
                     }else{
                         $log.log(response);
-                        $scope.errorMessage = response.message;
+                        $scope.errorMessage = $scope.errorMessage.concat('\n'+response.message);
                         $scope.errorMessageShow = true;
                     }
                 },
                 function (error) {
                     $log.log(error);
-                    $scope.errorMessage = error;
+                    $scope.errorMessage = $scope.errorMessage.concat('\n'+error.data);
                     $scope.errorMessageShow = true;
                 }
             );
         }
-        $scope.convertUnixTime = function (timestamp) {return new Date(timestamp).toISOString().replace(/[a-zA-Z]/g,' ');};
+        $scope.convertUnixTime = function (timestamp) {return new Timestamp(timestamp).toISOString().replace(/[a-zA-Z]/g,' ');};
         $scope.goEdit = function () {$window.location.href = 'edit.html';};
         refresh();
-        var intervalID = setInterval(function(){refresh();},10000);
+        var intervalID = setInterval(function(){refresh();},1000);
     }
 
     function registerController ($scope,$cookieStore,$window,$log,restService,VERSION) {
         $scope.version = VERSION;
+        $scope.errorMessage = '';
         for (var key in $cookieStore) {
             $cookieStore.remove(key);
         }
@@ -324,19 +409,19 @@
                             $scope.modalEnable = true;
                         } else {
                             $log.log(response);
-                            $scope.errorMessage = response.message;
+                            $scope.errorMessage = $scope.errorMessage.concat('\n'+response.message);
                             $scope.errorMessageShow = true;
                         }
                     },
                     function (error) {
                         $log.log(error);
-                        $scope.errorMessage = error;
+                        $scope.errorMessage = $scope.errorMessage.concat('\n'+error.data);
                         $scope.errorMessageShow = true;
                     }
                 );
             }else{
                 $log.log('Passwords do not match!');
-                $scope.errorMessage = 'Passwords do not match!';
+                $scope.errorMessage = $scope.errorMessage.concat('\n'+'Passwords do not match!');
                 $scope.errorMessageShow = true;
             }
         };
@@ -372,6 +457,7 @@
 
     function adminController ($scope,$cookieStore,$window,$log,$timeout,restService,VERSION) {
         $scope.version = VERSION;
+        $scope.errorMessage = '';
         var userCookie = $cookieStore.get('credentials');
         if (!userCookie) $window.location.href = 'index.html';
         $scope.username = userCookie.username;
@@ -390,19 +476,19 @@
                             }, 1000);
                         } else {
                             $log.log(response);
-                            $scope.errorMessage = response.message;
+                            $scope.errorMessage = $scope.errorMessage.concat('\n'+response.message);
                             $scope.errorMessageShow = true;
                         }
                     },
                     function (error) {
                         $log.log(error);
-                        $scope.errorMessage = error;
+                        $scope.errorMessage = $scope.errorMessage.concat('\n'+error.data);
                         $scope.errorMessageShow = true;
                     }
                 );
             }else{
                 $scope.users = [];
-                $scope.errorMessage = "* You are not authorized to view this page...";
+                $scope.errorMessage = $scope.errorMessage.concat('\n'+"You are not authorized to view this page...");
                 $scope.errorMessageShow = true;
             }
         };
@@ -417,13 +503,13 @@
                         userToActivate.status = 1;
                     }else{
                         $log.log(response);
-                        $scope.errorMessage= response.message;
+                        $scope.errorMessage = $scope.errorMessage.concat('\n'+response.message);
                         $scope.errorMessageShow = true;
                     }
                 },
                 function (error) {
                     $log.log(error);
-                    $scope.errorMessage= error;
+                    $scope.errorMessage = $scope.errorMessage.concat('\n'+error.data);
                     $scope.errorMessageShow = true;
                 }
             );
@@ -439,13 +525,13 @@
                         userToDisable.status = 0;
                     }else{
                         $log.log(response);
-                        $scope.errorMessage= response.message;
+                        $scope.errorMessage = $scope.errorMessage.concat('\n'+response.message);
                         $scope.errorMessageShow = true;
                     }
                 },
                 function (error) {
                     $log.log(error);
-                    $scope.errorMessage= error;
+                    $scope.errorMessage = $scope.errorMessage.concat('\n'+error.data);
                     $scope.errorMessageShow = true;
                 }
             );
@@ -455,6 +541,7 @@
 
     function editController ($scope,$cookieStore,$window,$log,restService,VERSION) {
         $scope.version = VERSION;
+        $scope.errorMessage = '';
         $scope.countries = ['Afghanistan','Albania','Algeria','Andorra','Angola','Antigua and Deps','Argentina','Armenia','Australia','Austria','Azerbaijan','Bahamas','Bahrain','Bangladesh','Barbados','Belarus','Belgium','Belize','Benin','Bhutan','Bolivia','Bosnia Herzegovina','Botswana','Brazil','Brunei','Bulgaria','Burkina','Burundi','Cambodia','Cameroon','Canada','Cape Verde','Central African Rep','Chad','Chile','China','Colombia','Comoros','Congo','Congo Democratic Rep','Costa Rica','Croatia','Cuba','Cyprus','Czech Republic','Denmark','Djibouti','Dominica','Dominican Republic','East Timor','Ecuador','Egypt','El Salvador','Equatorial Guinea','Eritrea','Estonia','Ethiopia','Fiji','Finland','France','Gabon','Gambia','Georgia','Germany','Ghana','Greece','Grenada','Guatemala','Guinea','Guinea Bissau','Guyana','Haiti','Honduras','Hungary','Iceland','India','Indonesia','Iran','Iraq','Ireland Republic','Israel','Italy','Ivory Coast','Jamaica','Japan','Jordan','Kazakhstan','Kenya','Kiribati','Korea North','Korea South','Kosovo','Kuwait','Kyrgyzstan','Laos','Latvia','Lebanon','Lesotho','Liberia','Libya','Liechtenstein','Lithuania','Luxembourg','Macedonia North','Madagascar','Malawi','Malaysia','Maldives','Mali','Malta','Marshall Islands','Mauritania','Mauritius','Mexico','Micronesia','Moldova','Monaco','Mongolia','Montenegro','Morocco','Mozambique','Myanmar (Burma)','Namibia','Nauru','Nepal','Netherlands','New Zealand','Nicaragua','Niger','Nigeria','Norway','Oman','Pakistan','Palau','Panama','Papua New Guinea','Paraguay','Peru','Philippines','Poland','Portugal','Qatar','Romania','Russian Federation','Rwanda','St Kitts & Nevis','St Lucia','Saint Vincent & the Grenadines','Samoa','San Marino','Sao Tome & Principe','Saudi Arabia','Senegal','Serbia','Seychelles','Sierra Leone','Singapore','Slovakia','Slovenia','Solomon Islands','Somalia','South Africa','South Sudan','Spain','Sri Lanka','Sudan','Suriname','Swaziland','Sweden','Switzerland','Syria','Taiwan','Tajikistan','Tanzania','Thailand','Togo','Tonga','Trinidad and Tobago','Tunisia','Turkey','Turkmenistan','Tuvalu','Uganda','Ukraine','United Arab Emirates','United Kingdom','United States','Uruguay','Uzbekistan','Vanuatu','Vatican City','Venezuela','Vietnam','Yemen','Zambia','Zimbabwe'];
         $scope.selectCountries = [];
 
@@ -497,7 +584,7 @@
                         $window.location.href = 'user.html';
                     }else{
                         $log.log(response);
-                        $scope.errorMessage= response.message;
+                        $scope.errorMessage = $scope.errorMessage.concat('\n'+response.message);
                         $scope.errorMessageShow = true;
                     }
                     $cookieStore.put('credentials',$scope.data);
@@ -505,7 +592,7 @@
                 },
                 function (error) {
                     $log.log(error);
-                    $scope.errorMessage= error;
+                    $scope.errorMessage = $scope.errorMessage.concat('\n'+error.data);
                     $scope.errorMessageShow = true;
                     document.getElementsByClassName('modal')[0].style.display = 'none';
                 }

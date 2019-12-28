@@ -45,7 +45,7 @@
         <property name="dataSource" ref="myDs"/>
     </bean>
 
-    <bean id="dbService" class="com.homegrown.util.DbService">
+    <bean id="dbService" class="com.homegrown.util.DbService" scope="singleton">
         <property name="dbTemplate" ref="dbTemplate"/>
     </bean>
 
@@ -53,18 +53,18 @@
         <property name="dataSource" ref="myDs"/>
     </bean>
 
-    <bean id="kafkaConsumer" class="com.homegrown.KafkaConsumer">
+    <bean id="kafkaConsumer" class="com.homegrown.KafkaConsumer" scope="singleton">
         <property name="appProperties" ref="appProperties"/>
         <property name="dbService" ref="dbService"/>
     </bean>
 
-    <bean id="processor" class="com.homegrown.services.engine.Processor">
+    <bean id="processor" class="com.homegrown.services.engine.Processor" scope="singleton">
         <property name="appProperties" ref="appProperties"/>
         <property name="kafkaConsumer" ref="kafkaConsumer"/>
         <property name="dbService" ref="dbService"/>
     </bean>
 
-    <bean id="restService" class="com.homegrown.services.iface.RestService">
+    <bean id="restService" class="com.homegrown.services.iface.RestService" scope="singleton">
         <property name="processor" ref="processor"/>
     </bean>
 

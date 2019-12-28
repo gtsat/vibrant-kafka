@@ -20,13 +20,24 @@ CREATE TABLE accounts (
   PRIMARY KEY (username)
 );
 
-CREATE TABLE similarities (
-	id BIGINT NOT NULL AUTO_INCREMENT,
+CREATE TABLE events (
+	offset BIGINT NOT NULL,
 	producer VARCHAR(256) NOT NULL,
 	creation_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 	similarity INT NOT NULL,
-  PRIMARY KEY (id)
+  PRIMARY KEY (offset)
 );
+
+CREATE INDEX events_producer_index ON events (producer);
+
+CREATE TABLE benchmarks (
+	creation_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+	producer VARCHAR(256) NOT NULL,
+	frequency FLOAT NOT NULL,
+	sample LONGTEXT NOT NULL,
+  PRIMARY KEY (producer)
+);
+
 
 COMMIT;
 

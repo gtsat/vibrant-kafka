@@ -104,18 +104,17 @@
 							<label>{{data.region}}</label>
 						</p>
 						<p><span style="display:inline-block; font-weight: bold; width:170px">Interest:</span>
-							<select ng-model="selectedCategory" style="padding:3px;color:#444;">
-								<option ng-repeat="category in dropdownCategories" value="{{category}}">{{category}} ({{cardinalities[category]}})</option>
+							<select ng-model="selectedCategory" style="padding:8px;margin:3px;color:#444;">
+								<option ng-repeat="category in dropdownCategories" value="{{category}}" ng-click="refresh()">{{category}} ({{cardinalities[category]}})</option>
 							</select>
 						</p>
 					</div>
-					<input type="button" value="Edit user details" ng-click='goEdit()' style="margin-top:20px;color:#444">
+					<input type="button" value="Edit user details" ng-click='goEdit()' style=";padding:5px;margin:8px;color:#444">
 				</div>
-				<p><span class="error" ng-show="errorMessageShow">{{errorMessage}}</span></p>
 
 				<div class="callout callout-warning producer"
 					 	ng-repeat="(key,value) in similarities" similarity="{{value}}" id="{{key}}"
-						ng-show="selectedCategory==='All Categories' || selectedCategory===categories[key]">
+						ng-show="selectedCategory=='All Categories' || selectedCategory==categories[key]">
 					<h4>{{key}}</h4>
 
 					<div class="box-body">
@@ -124,36 +123,57 @@
 							<span style="display:inline-block; font-weight: bold; width:170px">Similarity:</span>
 							<label>{{value}} %</label><br/>
 							<span style="display:inline-block; font-weight: bold; width:170px">Timestamp:</span>
-							<label>{{convertUnixTime(timestamps[key])}}</label><br/>
+							<label>{{timestamps[key]}}</label><br/>
+							<!--label>{{convertUnixTime(timestamps[key])}}</label><br/-->
 							<span style="display:inline-block; font-weight: bold; width:170px">Benchmark taken:</span>
-							<label>{{convertUnixTime(benchmarks[key])}}</label><br/>
+							<label>{{benchmarks[key]}}</label><br/>
+							<!--label>{{convertUnixTime(benchmarks[key])}}</label><br/-->
 							<span style="display:inline-block; font-weight: bold; width:170px">Category:</span>
 							<label>{{categories[key]}}</label><br/>
 						</p>
 						</div>
-
 						<div>
 							<div style="display:inline-block;margin:20px;">
-								<table border=1 bordercolor=white ng-show="alerts[key].length>0">
+								<table border=1 bordercolor=white ng-show="events[key].length>0">
 									<tr>
 										<th style="padding:5px;padding-left:20px;padding-right:20px">Critical Events</th>
 										<th style="padding:5px;padding-left:20px;padding-right:20px">Similarity</th>
 									</tr>
-									<tr ng-repeat="tuple in alerts[key] track by tuple.id">
+									<tr ng-repeat="tuple in events[key] track by tuple.offset">
 										<td style="padding:5px;padding-left:20px;padding-right:20px">{{tuple.creationDate}}</td>
 										<td style="padding:5px;padding-left:20px;padding-right:20px">{{tuple.similarity}}</td>
 									</tr>
 								</table>
+								<div style="display:block;">
+									<input type="button" value="Clear Events" ng-click='clearEvents(key)' style="padding:5px;margin-top:12px;color:#444;">
+									<input type="button" value="Reset Spectrum" ng-click='resetProducer(key)' style="padding:5px;margin-top:12px;color:#444;">
+								</div>
 							</div>
-							<div style="display:inline-block;margin:15px;padding-left:5px;padding-right:5px;width:33%;">
+							<div style="display:inline-block;margin:5px;padding-left:5px;padding-right:5px;width:28%;">
 								<div id="{{key}}Time"></div>
 							</div>
-							<div style="display:inline-block;margin:15px;padding-left:5px;padding-right:5px;width:33%;">
+							<div style="display:inline-block;margin:5px;padding-left:5px;padding-right:5px;width:28%;">
 								<div id="{{key}}Spectral"></div>
+							</div>
+							<div style="display:inline-block;margin:5px;padding-left:5px;padding-right:5px;width:25%;">
+								<div id="{{key}}Motion" style="width:25%;">
+									<img src="{{motionUrls[key]}}" style="-webkit-user-select:none;display:block;margin:auto;padding:auto;" />
+								</div>
 							</div>
 						</div>
 					</div><!-- /.box-body -->
 				</div><!-- /.box -->
+				<div ng-show="errorMessageShow">
+					<div style="display:block;margin:5px;padding:5px;">
+						<p><span class="error">{{errorMessage}}</span></p>
+					</div>
+					<div style="display:block;margin:5px;padding:5px;">
+						<input type="button" value="Clear Messages" ng-click="errorMessageShow=false;errorMessage='';" style="padding:5px;color:#444;">
+					</div>
+				</div>
+				<!--div>
+					<input type="button" value="Reset All" ng-click='resetAllProducers()' style="padding:5px;margin:20px;color:#444;">
+				</div-->
 			</section><!-- /.content -->
 		</div><!-- /.container -->
 	</div><!-- /.content-wrapper -->
@@ -163,7 +183,7 @@
 				<b>Version</b> {{version}}
 			</div>
 			<!--strong>Copyright &copy; 2019 <a href="http://motivian.com">Motivian</a>.</strong-->
-			<strong>HomeGrown Research Labs</strong> Ομήρου 39, Άγιος Δημήτριος
+			<strong>HomeGrown Research Labs </strong> Ομήρου 39, Άγιος Δημήτριος
 		</div><!-- /.container -->
 	</footer>
 </div><!-- ./wrapper -->

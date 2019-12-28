@@ -37,7 +37,7 @@ public class SoapService implements ApplicationContextAware {
         try {
             JAXB_CONTEXT = JAXBContext.newInstance
                     (
-                            SimilaritiesListResponseDto.class,
+                            EventListResponseDto.class,
                             AuthenticationResponseDto.class,
                             KafkaConsumerResponseDto.class,
                             UsersListResponseDto.class,
@@ -50,8 +50,82 @@ public class SoapService implements ApplicationContextAware {
         }
     }
 
+
     @WebMethod
-    public SimilaritiesListResponseDto getSimilaritiesByProducer (
+    public ResponseDto resetAllProducers (
+            @XmlElement(required=true)
+            @WebParam(name="username") String username,
+            @XmlElement(required=true)
+            @WebParam(name="password") String password
+    ) {
+        String debug = "resetAllProducers::username:"+username+". ";
+        logger.info(debug + "START.");
+        long start = System.currentTimeMillis();
+        try{
+            return processor.resetAllProducers(username, password);
+        }catch(Exception e){
+            logger.error(debug + "EXCEPTION: " + e.getMessage());
+            for (StackTraceElement element : e.getStackTrace()) {
+                logger.error (debug + element);
+            }
+            return new ResponseDto("ERROR","ERROR: "+e.getMessage());
+        }finally{
+            logger.info(debug + "END @ " + (System.currentTimeMillis()-start) + "msec.");
+        }
+    }
+
+    @WebMethod
+    public ResponseDto resetProducer (
+            @XmlElement(required=true)
+            @WebParam(name="username") String username,
+            @XmlElement(required=true)
+            @WebParam(name="password") String password,
+            @XmlElement(required=true)
+            @WebParam(name="producer") String producer
+    ) {
+        String debug = "resetProducer::username:"+username+". ";
+        logger.info(debug + "START.");
+        long start = System.currentTimeMillis();
+        try{
+            return processor.resetProducer(username, password, producer);
+        }catch(Exception e){
+            logger.error(debug + "EXCEPTION: " + e.getMessage());
+            for (StackTraceElement element : e.getStackTrace()) {
+                logger.error (debug + element);
+            }
+            return new ResponseDto("ERROR","ERROR: "+e.getMessage());
+        }finally{
+            logger.info(debug + "END @ " + (System.currentTimeMillis()-start) + "msec.");
+        }
+    }
+
+    @WebMethod
+    public ResponseDto clearEvents (
+            @XmlElement(required=true)
+            @WebParam(name="username") String username,
+            @XmlElement(required=true)
+            @WebParam(name="password") String password,
+            @XmlElement(required=true)
+            @WebParam(name="producer") String producer
+    ) {
+        String debug = "clearEvents::username:"+username+". ";
+        logger.info(debug + "START.");
+        long start = System.currentTimeMillis();
+        try{
+            return processor.clearEvents(username, password, producer);
+        }catch(Exception e){
+            logger.error(debug + "EXCEPTION: " + e.getMessage());
+            for (StackTraceElement element : e.getStackTrace()) {
+                logger.error (debug + element);
+            }
+            return new ResponseDto("ERROR","ERROR: "+e.getMessage());
+        }finally{
+            logger.info(debug + "END @ " + (System.currentTimeMillis()-start) + "msec.");
+        }
+    }
+
+    @WebMethod
+    public EventListResponseDto getEvents (
             @XmlElement(required=true)
             @WebParam(name="username") String username,
             @XmlElement(required=true)
@@ -63,34 +137,36 @@ public class SoapService implements ApplicationContextAware {
             @XmlElement(required=true)
             @WebParam(name="limit") Integer limit
     ) {
-        String debug = "getSimilaritiesByProducer::username:"+username+". ";
+        String debug = "getEvents::username:"+username+". ";
         logger.info(debug + "START.");
         long start = System.currentTimeMillis();
         try{
-            return processor.getSimilaritiesByProducer(username, password,producer,threshold,limit);
+            return processor.getEvents(username, password, producer, threshold, limit);
         }catch(Exception e){
             logger.error(debug + "EXCEPTION: " + e.getMessage());
             for (StackTraceElement element : e.getStackTrace()) {
                 logger.error (debug + element);
             }
-            return new SimilaritiesListResponseDto("ERROR","ERROR: "+e.getMessage());
+            return new EventListResponseDto("ERROR","ERROR: "+e.getMessage());
         }finally{
             logger.info(debug + "END @ " + (System.currentTimeMillis()-start) + "msec.");
         }
     }
 
     @WebMethod
-    public KafkaConsumerResponseDto refreshSimilarities (
+    public KafkaConsumerResponseDto updateConsumer (
             @XmlElement(required=true)
             @WebParam(name="username") String username,
             @XmlElement(required=true)
-            @WebParam(name="password") String password
+            @WebParam(name="password") String password,
+            @XmlElement(required=true)
+            @WebParam(name="category") String category
     ) {
-        String debug = "refreshSimilarities::username:"+username+". ";
+        String debug = "updateConsumer::username:"+username+". ";
         logger.info(debug + "START.");
         long start = System.currentTimeMillis();
         try{
-            return processor.refreshSimilarities(username, password);
+            return processor.updateConsumer(username, password, category);
         }catch(Exception e){
             logger.error(debug + "EXCEPTION: " + e.getMessage());
             for (StackTraceElement element : e.getStackTrace()) {

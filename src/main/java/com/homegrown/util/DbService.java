@@ -5,60 +5,162 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.apache.log4j.Logger;
 
-import javax.transaction.Transactional;
 import java.text.SimpleDateFormat;
+import java.io.InputStreamReader;
+import java.io.BufferedReader;
 import java.util.ArrayList;
 import java.util.List;
 import java.sql.ResultSet;
+import java.sql.Timestamp;
 import java.sql.SQLException;
+import javax.transaction.Transactional;
+
 
 public class DbService {
     private static Logger logger = Logger.getLogger (DbService.class);
 
     private JdbcTemplate dbTemplate;
-    public JdbcTemplate getDbTemplate() {
-        return dbTemplate;
-    }
-    public void setDbTemplate(JdbcTemplate dbTemplate) {
-        this.dbTemplate = dbTemplate;
-    }
+    public JdbcTemplate getDbTemplate() {return dbTemplate;}
+    public void setDbTemplate(JdbcTemplate dbTemplate) {this.dbTemplate = dbTemplate;}
 
-    private static class SimilarityMapper implements RowMapper {
-        public Object mapRow (ResultSet rs, int rowNum) throws SQLException {
-            Similarity sim = new Similarity();
-            try{
-                sim.setId(rs.getInt("ID"));
-                sim.setProducer(rs.getString("PRODUCER"));
-                sim.setSimilarity(rs.getInt("SIMILARITY"));
-                sim.setCreationDate(rs.getTimestamp("CREATION_DATE")!=null?new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(rs.getTimestamp("CREATION_DATE")):null);
-            }catch (Exception e) {e.printStackTrace();}
-            return sim;
-        }
-    }
 
-    public int insertSimilarity (String producer, int similarity) {
+    public int deleteBenchmark (String producer) {
         try{
             assert (dbTemplate != null);
-            String sql = "INSERT INTO similarities (producer,similarity,creation_date) VALUES (?,?,CURRENT_TIMESTAMP)";
-            logger.info("DBService | insertUser() | Executing query: "+sql);
-            return getDbTemplate().update(sql,producer,similarity);
+            String sql = "DELETE FROM benchmarks WHERE producer=?";
+            logger.info("DBService | deleteBenchmark() | Executing query: "+sql);
+            return dbTemplate.update(sql,producer);
         }catch (Exception e){
-            e.printStackTrace();
-            logger.error("DBService | insertSimilarity() | EXCEPTION:\n" + e.getMessage() + "\n" + e);
+            for (StackTraceElement elem : e.getStackTrace()) {
+                logger.error(elem);
+            }
+            logger.error("DBService | deleteBenchmark() | EXCEPTION:\n" + e.getMessage() + "\n" + e);
         }
         return -1;
     }
 
-    public List<Similarity> getSimilaritiesByProducer (String producer) {return getSimilaritiesByProducer(producer,0,10);}
-    public List<Similarity> getSimilaritiesByProducer (String producer, Integer threshold, Integer limit) {
-        assert (dbTemplate != null);
-        String sql = "select * from similarities where producer = ? and similarity < ? order by creation_date asc, similarity desc limit ?";
-        logger.info("DBService | getSimilaritiesByProducer() | Executing query: "+sql);
+    public int insertBenchmark (String producer, float frequency, byte[] sample) {
         try{
-            return (List<Similarity>) getDbTemplate().query(sql, new Object[]{producer,threshold,limit}, new SimilarityMapper());
+            String sql = "INSERT INTO benchmarks (producer,frequency,sample,creation_date) VALUES (?,?,?,CURRENT_TIMESTAMP)";
+            logger.info("DBService | insertBenchmark() | Executing query: "+sql);
+            StringBuilder str = new StringBuilder();
+            for (byte b : sample) {
+                str.append('\n');
+                str.append(b);
+            }
+            if (str.length()>0) {
+                str.deleteCharAt(0);
+            }
+            return dbTemplate.update(sql,producer,frequency,str.toString());
         }catch (Exception e){
-            e.printStackTrace();
-            logger.error("DBService | getSimilaritiesByProducer() | EXCEPTION:\n" + e.getMessage() + "\n" + e);
+            for (StackTraceElement elem : e.getStackTrace()) {
+                logger.error(elem);
+            }
+            logger.error("DBService | insertBenchmark() | EXCEPTION:\n" + e.getMessage() + "\n" + e);
+        }
+        return -1;
+    }
+
+    private static class BenchmarkSampleMapper implements RowMapper {
+        public Object mapRow (ResultSet rs, int rowNum) throws SQLException {
+            BenchmarkSample sample = null;
+            try{
+                BufferedReader b = new BufferedReader(new InputStreamReader((rs.getClob("SAMPLE").getAsciiStream())));
+                List<Byte> data = new ArrayList<>();
+                for (String line=null;(line = b.readLine())!=null;) {
+                    data.add((byte)Integer.parseInt(line));
+                }
+                sample = new BenchmarkSample(
+                        rs.getString("PRODUCER"),
+                        rs.getFloat("FREQUENCY"),
+                        data,
+                        rs.getTimestamp("CREATION_DATE"));
+            }catch (Exception e) {
+                for (StackTraceElement elem : e.getStackTrace()) {
+                    logger.error(elem);
+                }
+                logger.error("DBService | BenchmarkSampleMapper | EXCEPTION:\n" + e.getMessage() + "\n" + e);
+            }
+            return sample;
+        }
+    }
+
+    public BenchmarkSample getBenchmark (String producer) {
+        BenchmarkSample sample = null;
+        try{
+            assert (dbTemplate != null);
+            String sql = "SELECT producer,frequency,sample,creation_date FROM benchmarks WHERE producer=?";
+            logger.info("DBService | getBenchmark() | Executing query: "+sql);
+            sample = (BenchmarkSample) dbTemplate.queryForObject (sql, new Object[]{producer}, new BenchmarkSampleMapper());
+        }catch (Exception e){
+            for (StackTraceElement elem : e.getStackTrace()) {
+                logger.error(elem);
+            }
+            logger.error("DBService | getBenchmark() | EXCEPTION:\n" + e.getMessage() + "\n" + e);
+        }
+        return sample;
+    }
+
+    private static class EventMapper implements RowMapper {
+        public Object mapRow (ResultSet rs, int rowNum) throws SQLException {
+            Event event = new Event();
+            try{
+                event.setOffset(rs.getInt("OFFSET"));
+                event.setProducer(rs.getString("PRODUCER"));
+                event.setSimilarity(rs.getInt("SIMILARITY"));
+                event.setCreationDate(rs.getTimestamp("CREATION_DATE")!=null?new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(rs.getTimestamp("CREATION_DATE")):null);
+            }catch (Exception e) {
+                for (StackTraceElement elem : e.getStackTrace()) {
+                    logger.error(elem);
+                }
+                logger.error("DBService | EventMapper | EXCEPTION:\n" + e.getMessage() + "\n" + e);
+            }
+            return event;
+        }
+    }
+
+    public int clearEvents (String producer) {
+        try{
+            assert (dbTemplate != null);
+            String sql = "DELETE FROM events WHERE producer=?";
+            logger.info("DBService | clearEvents() | Executing query: "+sql);
+            return dbTemplate.update(sql,producer);
+        }catch (Exception e){
+            for (StackTraceElement elem : e.getStackTrace()) {
+                logger.error(elem);
+            }
+            logger.error("DBService | clearEvents() | EXCEPTION:\n" + e.getMessage() + "\n" + e);
+        }
+        return -1;
+    }
+
+    public int insertEvent (String producer, int similarity, long offset, Timestamp timestamp) {
+        try{
+            assert (dbTemplate != null);
+            String sql = "INSERT INTO events (offset,producer,similarity,creation_date) VALUES (?,?,?,?)";
+            logger.info("DBService | insertEvent() | Executing query: "+sql);
+            return dbTemplate.update(sql,offset,producer,similarity,timestamp);
+        }catch (Exception e){
+            for (StackTraceElement elem : e.getStackTrace()) {
+                logger.error(elem);
+            }
+            logger.error("DBService | insertEvent() | EXCEPTION:\n" + e.getMessage() + "\n" + e);
+        }
+        return -1;
+    }
+
+    public List<Event> getEvents (String producer) {return getEvents (producer,0,10);}
+    public List<Event> getEvents (String producer, Integer threshold, Integer limit) {
+        assert (dbTemplate != null);
+        String sql = "select * from events where producer=? and similarity<? order by creation_date asc, similarity desc limit ?";
+        logger.info("DBService | getEvents() | Executing query: "+sql);
+        try{
+            return (List<Event>) dbTemplate.query(sql, new Object[]{producer,threshold,limit}, new EventMapper());
+        }catch (Exception e){
+            for (StackTraceElement elem : e.getStackTrace()) {
+                logger.error(elem);
+            }
+            logger.error("DBService | getEvents() | EXCEPTION:\n" + e.getMessage() + "\n" + e);
         }
         return new ArrayList<>();
     }
@@ -78,7 +180,12 @@ public class DbService {
                 user.setRegion(rs.getString("REGION"));
                 user.setLastUsage(rs.getTimestamp("LAST_USAGE")!=null?new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(rs.getTimestamp("LAST_USAGE")):null);
                 user.setCreationDate(rs.getTimestamp("CREATION_DATE")!=null?new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(rs.getTimestamp("CREATION_DATE")):null);
-            }catch (Exception e) {e.printStackTrace();}
+            }catch (Exception e) {
+                for (StackTraceElement elem : e.getStackTrace()) {
+                    logger.error(elem);
+                }
+                logger.error("DBService | UserMapper | EXCEPTION:\n" + e.getMessage() + "\n" + e);
+            }
             return user;
         }
     }
@@ -88,10 +195,12 @@ public class DbService {
         String sql = "select * from accounts where username=? and status='1'";
         logger.info("DBService | getUserByUsername() | Executing query: "+sql);
         try{
-            List<User> userList = (List<User>) getDbTemplate().query(sql, new Object[]{username}, new UserMapper());
+            List<User> userList = (List<User>) dbTemplate.query(sql, new Object[]{username}, new UserMapper());
             if (userList != null && userList.size() > 0) return userList.get(0);
         }catch (Exception e){
-            e.printStackTrace();
+            for (StackTraceElement elem : e.getStackTrace()) {
+                logger.error(elem);
+            }
             logger.error("DBService | getUserByUsername() | EXCEPTION:\n" + e.getMessage() + "\n" + e);
         }
         return null;
@@ -102,9 +211,11 @@ public class DbService {
         String sql = "select * from accounts";
         logger.info("DBService | getUsers() | Executing query: "+sql);
         try{
-            return (List<User>) getDbTemplate().query(sql, new Object[]{}, new UserMapper());
+            return (List<User>) dbTemplate.query(sql, new Object[]{}, new UserMapper());
         }catch (Exception e){
-            e.printStackTrace();
+            for (StackTraceElement elem : e.getStackTrace()) {
+                logger.error(elem);
+            }
             logger.error("DBService | getUsers() | EXCEPTION:\n" + e.getMessage() + "\n" + e);
         }
         return new ArrayList<>();
@@ -120,12 +231,14 @@ public class DbService {
             assert (dbTemplate != null);
             String sql = "INSERT INTO accounts (username,password,firstname,lastname,msisdn,email,quota_memory,quota_disk,quota_cpus,free_memory,free_disk,free_cpus,status,region) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,0,?,?)";
             logger.info("DBService | insertUser() | Executing query: "+sql);
-            int rval = getDbTemplate().update(sql,username,password,firstname,lastname,msisdn,email,quotaMemory,quotaDisk,quotaCpus,quotaMemory,quotaDisk,quotaCpus,region);
+            int rval = dbTemplate.update(sql, username, password, firstname, lastname, msisdn, email, quotaMemory, quotaDisk, quotaCpus, quotaMemory,quotaDisk,quotaCpus,region);
             if (rval > 0) {
                 return null;
             }
         }catch (Exception e){
-            e.printStackTrace();
+            for (StackTraceElement elem : e.getStackTrace()) {
+                logger.error(elem);
+            }
             logger.error("DBService | insertUser() | EXCEPTION:\n" + e.getMessage() + "\n" + e);
             return e.getMessage();
         }
@@ -141,9 +254,11 @@ public class DbService {
                     "email=?, msisdn=?, region=? " +
                     "WHERE username=? and status='1'";
             logger.info("DBService | updateUserDetails() | Executing query: "+sql);
-            return getDbTemplate().update(sql,firstname,lastname,email,msisdn,region,username);
+            return dbTemplate.update(sql, firstname,lastname,email,msisdn,region,username);
         }catch (Exception e){
-            e.printStackTrace();
+            for (StackTraceElement elem : e.getStackTrace()) {
+                logger.error(elem);
+            }
             logger.error("DBService | updateUserDetails() | EXCEPTION:\n" + e.getMessage() + "\n" + e);
         }
         return -1;
@@ -155,9 +270,11 @@ public class DbService {
             assert (dbTemplate != null);
             String sql = "UPDATE accounts SET status='1' WHERE username=? and status=0";
             logger.info("DBService | activateUser() | Executing query: "+sql);
-            return getDbTemplate().update(sql,username);
+            return dbTemplate.update(sql,username);
         }catch (Exception e){
-            e.printStackTrace();
+            for (StackTraceElement elem : e.getStackTrace()) {
+                logger.error(elem);
+            }
             logger.error("DBService | activateUser() | EXCEPTION:\n" + e.getMessage() + "\n" + e);
         }
         return -1;
@@ -169,9 +286,11 @@ public class DbService {
             assert (dbTemplate != null);
             String sql = "UPDATE accounts SET status=0 WHERE username=? and status='1'";
             logger.info("DBService | disableUser() | Executing query: "+sql);
-            return getDbTemplate().update(sql,username);
+            return dbTemplate.update(sql,username);
         }catch (Exception e){
-            e.printStackTrace();
+            for (StackTraceElement elem : e.getStackTrace()) {
+                logger.error(elem);
+            }
             logger.error("DBService | disableUser() | EXCEPTION:\n" + e.getMessage() + "\n" + e);
         }
         return -1;
@@ -183,9 +302,11 @@ public class DbService {
             assert (dbTemplate != null);
             String sql = "UPDATE accounts SET last_usage=CURRENT_TIMESTAMP WHERE username=? and status='1'";
             logger.info("DBService | touchUser() | Executing query: "+sql);
-            return getDbTemplate().update(sql,username);
+            return dbTemplate.update(sql,username);
         }catch (Exception e){
-            e.printStackTrace();
+            for (StackTraceElement elem : e.getStackTrace()) {
+                logger.error(elem);
+            }
             logger.error("DBService | touchUser() | EXCEPTION:\n" + e.getMessage() + "\n" + e);
         }
         return -1;

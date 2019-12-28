@@ -1,0 +1,264 @@
+<definitions 
+	xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" 
+	xmlns:tns="http://iface.services.homegrown.com/" 
+	xmlns:xsd="http://www.w3.org/2001/XMLSchema" 
+	xmlns="http://schemas.xmlsoap.org/wsdl/" 
+	targetNamespace="http://iface.services.homegrown.com/" 
+	name="SoapServiceService">
+<types>
+<xsd:schema>
+<xsd:import namespace="http://jaxb.dev.java.net/array" schemaLocation="../xsd/vibrant.1.xsd"/>
+</xsd:schema>
+<xsd:schema>
+<xsd:import namespace="http://iface.services.homegrown.com/" schemaLocation="../xsd/vibrant.2.xsd"/>
+</xsd:schema>
+</types>
+<message name="register">
+<part name="username" type="xsd:string"/>
+<part name="password" type="xsd:string"/>
+<part name="firstname" type="xsd:string"/>
+<part name="lastname" type="xsd:string"/>
+<part name="msisdn" type="xsd:string"/>
+<part name="email" type="xsd:string"/>
+<part name="region" type="xsd:string"/>
+</message>
+<message name="registerResponse">
+<part name="return" type="tns:responseDto"/>
+</message>
+<message name="getUsers">
+<part name="username" type="xsd:string"/>
+<part name="password" type="xsd:string"/>
+</message>
+<message name="getUsersResponse">
+<part name="return" type="tns:usersListResponseDto"/>
+</message>
+<message name="authenticate">
+<part name="username" type="xsd:string"/>
+<part name="password" type="xsd:string"/>
+</message>
+<message name="authenticateResponse">
+<part name="return" type="tns:authenticationResponseDto"/>
+</message>
+<message name="clearEvents">
+<part name="username" type="xsd:string"/>
+<part name="password" type="xsd:string"/>
+<part name="producer" type="xsd:string"/>
+</message>
+<message name="clearEventsResponse">
+<part name="return" type="tns:responseDto"/>
+</message>
+<message name="getEvents">
+<part name="username" type="xsd:string"/>
+<part name="password" type="xsd:string"/>
+<part name="producer" type="xsd:string"/>
+<part name="threshold" type="xsd:int"/>
+<part name="limit" type="xsd:int"/>
+</message>
+<message name="getEventsResponse">
+<part name="return" type="tns:eventListResponseDto"/>
+</message>
+<message name="updateUserDetails">
+<part name="username" type="xsd:string"/>
+<part name="password" type="xsd:string"/>
+<part name="firstname" type="xsd:string"/>
+<part name="lastname" type="xsd:string"/>
+<part name="msisdn" type="xsd:string"/>
+<part name="email" type="xsd:string"/>
+<part name="region" type="xsd:string"/>
+</message>
+<message name="updateUserDetailsResponse">
+<part name="return" type="tns:responseDto"/>
+</message>
+<message name="activateUser">
+<part name="username" type="xsd:string"/>
+<part name="password" type="xsd:string"/>
+<part name="toActivate" type="xsd:string"/>
+</message>
+<message name="activateUserResponse">
+<part name="return" type="tns:responseDto"/>
+</message>
+<message name="disableUser">
+<part name="username" type="xsd:string"/>
+<part name="password" type="xsd:string"/>
+<part name="toDisable" type="xsd:string"/>
+</message>
+<message name="disableUserResponse">
+<part name="return" type="tns:responseDto"/>
+</message>
+<message name="resetAllProducers">
+<part name="username" type="xsd:string"/>
+<part name="password" type="xsd:string"/>
+</message>
+<message name="resetAllProducersResponse">
+<part name="return" type="tns:responseDto"/>
+</message>
+<message name="resetProducer">
+<part name="username" type="xsd:string"/>
+<part name="password" type="xsd:string"/>
+<part name="producer" type="xsd:string"/>
+</message>
+<message name="resetProducerResponse">
+<part name="return" type="tns:responseDto"/>
+</message>
+<message name="updateConsumer">
+<part name="username" type="xsd:string"/>
+<part name="password" type="xsd:string"/>
+<part name="category" type="xsd:string"/>
+</message>
+<message name="updateConsumerResponse">
+<part name="return" type="tns:kafkaConsumerResponseDto"/>
+</message>
+<portType name="SoapService">
+<operation name="register" parameterOrder="username password firstname lastname msisdn email region">
+<input message="tns:register"/>
+<output message="tns:registerResponse"/>
+</operation>
+<operation name="getUsers" parameterOrder="username password">
+<input message="tns:getUsers"/>
+<output message="tns:getUsersResponse"/>
+</operation>
+<operation name="authenticate" parameterOrder="username password">
+<input message="tns:authenticate"/>
+<output message="tns:authenticateResponse"/>
+</operation>
+<operation name="clearEvents" parameterOrder="username password producer">
+<input message="tns:clearEvents"/>
+<output message="tns:clearEventsResponse"/>
+</operation>
+<operation name="getEvents" parameterOrder="username password producer threshold limit">
+<input message="tns:getEvents"/>
+<output message="tns:getEventsResponse"/>
+</operation>
+<operation name="updateUserDetails" parameterOrder="username password firstname lastname msisdn email region">
+<input message="tns:updateUserDetails"/>
+<output message="tns:updateUserDetailsResponse"/>
+</operation>
+<operation name="activateUser" parameterOrder="username password toActivate">
+<input message="tns:activateUser"/>
+<output message="tns:activateUserResponse"/>
+</operation>
+<operation name="disableUser" parameterOrder="username password toDisable">
+<input message="tns:disableUser"/>
+<output message="tns:disableUserResponse"/>
+</operation>
+<operation name="resetAllProducers" parameterOrder="username password">
+<input message="tns:resetAllProducers"/>
+<output message="tns:resetAllProducersResponse"/>
+</operation>
+<operation name="resetProducer" parameterOrder="username password producer">
+<input message="tns:resetProducer"/>
+<output message="tns:resetProducerResponse"/>
+</operation>
+<operation name="updateConsumer" parameterOrder="username password category">
+<input message="tns:updateConsumer"/>
+<output message="tns:updateConsumerResponse"/>
+</operation>
+</portType>
+<binding name="SoapServicePortBinding" type="tns:SoapService">
+<soap:binding transport="http://schemas.xmlsoap.org/soap/http" style="rpc"/>
+<operation name="register">
+<soap:operation soapAction=""/>
+<input>
+<soap:body use="literal" namespace="http://iface.services.homegrown.com/"/>
+</input>
+<output>
+<soap:body use="literal" namespace="http://iface.services.homegrown.com/"/>
+</output>
+</operation>
+<operation name="getUsers">
+<soap:operation soapAction=""/>
+<input>
+<soap:body use="literal" namespace="http://iface.services.homegrown.com/"/>
+</input>
+<output>
+<soap:body use="literal" namespace="http://iface.services.homegrown.com/"/>
+</output>
+</operation>
+<operation name="authenticate">
+<soap:operation soapAction=""/>
+<input>
+<soap:body use="literal" namespace="http://iface.services.homegrown.com/"/>
+</input>
+<output>
+<soap:body use="literal" namespace="http://iface.services.homegrown.com/"/>
+</output>
+</operation>
+<operation name="clearEvents">
+<soap:operation soapAction=""/>
+<input>
+<soap:body use="literal" namespace="http://iface.services.homegrown.com/"/>
+</input>
+<output>
+<soap:body use="literal" namespace="http://iface.services.homegrown.com/"/>
+</output>
+</operation>
+<operation name="getEvents">
+<soap:operation soapAction=""/>
+<input>
+<soap:body use="literal" namespace="http://iface.services.homegrown.com/"/>
+</input>
+<output>
+<soap:body use="literal" namespace="http://iface.services.homegrown.com/"/>
+</output>
+</operation>
+<operation name="updateUserDetails">
+<soap:operation soapAction=""/>
+<input>
+<soap:body use="literal" namespace="http://iface.services.homegrown.com/"/>
+</input>
+<output>
+<soap:body use="literal" namespace="http://iface.services.homegrown.com/"/>
+</output>
+</operation>
+<operation name="activateUser">
+<soap:operation soapAction=""/>
+<input>
+<soap:body use="literal" namespace="http://iface.services.homegrown.com/"/>
+</input>
+<output>
+<soap:body use="literal" namespace="http://iface.services.homegrown.com/"/>
+</output>
+</operation>
+<operation name="disableUser">
+<soap:operation soapAction=""/>
+<input>
+<soap:body use="literal" namespace="http://iface.services.homegrown.com/"/>
+</input>
+<output>
+<soap:body use="literal" namespace="http://iface.services.homegrown.com/"/>
+</output>
+</operation>
+<operation name="resetAllProducers">
+<soap:operation soapAction=""/>
+<input>
+<soap:body use="literal" namespace="http://iface.services.homegrown.com/"/>
+</input>
+<output>
+<soap:body use="literal" namespace="http://iface.services.homegrown.com/"/>
+</output>
+</operation>
+<operation name="resetProducer">
+<soap:operation soapAction=""/>
+<input>
+<soap:body use="literal" namespace="http://iface.services.homegrown.com/"/>
+</input>
+<output>
+<soap:body use="literal" namespace="http://iface.services.homegrown.com/"/>
+</output>
+</operation>
+<operation name="updateConsumer">
+<soap:operation soapAction=""/>
+<input>
+<soap:body use="literal" namespace="http://iface.services.homegrown.com/"/>
+</input>
+<output>
+<soap:body use="literal" namespace="http://iface.services.homegrown.com/"/>
+</output>
+</operation>
+</binding>
+<service name="SoapServiceService">
+<port name="SoapServicePort" binding="tns:SoapServicePortBinding">
+<soap:address location="http://localhost:8080/vibrant-kafka/soap"/>
+</port>
+</service>
+</definitions>

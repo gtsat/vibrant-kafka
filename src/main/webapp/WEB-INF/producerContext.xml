@@ -29,6 +29,7 @@
                 <prop key="samplingFrequencyLo">${recordings.sampling.lo}</prop>
                 <prop key="samplingFrequencyHi">${recordings.sampling.hi}</prop>
                 <prop key="transformationSize">${recordings.transformationSize}</prop>
+                <prop key="motionUrl">${motion.url}</prop>
             </props>
         </property>
     </bean>

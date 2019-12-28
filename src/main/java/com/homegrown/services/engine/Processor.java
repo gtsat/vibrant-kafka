@@ -1,29 +1,17 @@
 package com.homegrown.services.engine;
 
-import com.homegrown.KafkaConsumer;
-import com.homegrown.util.DbService;
-import com.homegrown.services.model.*;
-import org.apache.log4j.Logger;
-
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.ArrayList;
 import java.util.Properties;
 import java.security.MessageDigest;
+import com.homegrown.services.model.*;
+import com.homegrown.util.DbService;
+import com.homegrown.KafkaConsumer;
+import org.apache.log4j.Logger;
 
 
-public class Processor { /*implements ApplicationContextAware {
-    private ApplicationContext context;
-    @Override public void setApplicationContext(ApplicationContext context) {this.context=context;}
-
-    private AsyncProcessor asyncProcessor;
-    public AsyncProcessor getAsyncProcessor() {return asyncProcessor;}
-    public void setAsyncProcessor(AsyncProcessor asyncProcessor) {this.asyncProcessor = asyncProcessor;}
-
-    public Processor () {
-        if (context == null) {
-            WebApplicationContext context = ContextLoader.getCurrentWebApplicationContext();
-        }
-        asyncProcessor = (AsyncProcessor) context.getBean("asyncProcessor");
-    }
-    */
+public class Processor {
     private DbService dbService;
     public DbService getDbService(){
         return dbService;
@@ -42,9 +30,8 @@ public class Processor { /*implements ApplicationContextAware {
 
     private static Logger logger = Logger.getLogger(Processor.class);
 
-    public SimilaritiesListResponseDto getSimilaritiesByProducer (String username, String password,
-                                                                  String producer, int threshold,int limit) {
-        String debug = "getSimilaritiesByProducer::username:"+username+". ";
+    public ResponseDto resetAllProducers (String username, String password) {
+        String debug = "resetAllProducers::username:"+username+". ";
         logger.info(debug+"START.");
         long start = System.currentTimeMillis();
         try {
@@ -52,27 +39,116 @@ public class Processor { /*implements ApplicationContextAware {
             if (auth.getStatus().equals("SUCCESS")){
                 int rows = dbService.touchUser(username);
                 if (rows != 1) {
-                    return new SimilaritiesListResponseDto ("ERROR", "ERROR: Unable to update last usage date in app database (code="+rows+").");
+                    return new ResponseDto ("ERROR", "ERROR: Unable to update last usage date in app database (code="+rows+").");
                 }
-                SimilaritiesListResponseDto responseDto = new SimilaritiesListResponseDto("SUCCESS", "SUCCESS");
-                responseDto.setSimilarities(dbService.getSimilaritiesByProducer(producer,threshold,limit));
+                kafkaConsumer.resetAllProducers();
+                for (String producer : kafkaConsumer.getCategories().keySet()) {
+                    dbService.deleteBenchmark(producer);
+                }
+                ResponseDto responseDto = new ResponseDto("SUCCESS", "SUCCESS");
                 return responseDto;
             }else{
-                return new SimilaritiesListResponseDto(auth.getStatus(),auth.getMessage());
+                return new ResponseDto(auth.getStatus(),auth.getMessage());
             }
         }catch (Exception e){
             logger.error(debug+"EXCEPTION: "+e.getMessage());
             for (StackTraceElement element : e.getStackTrace()){
                 logger.error (debug+element);
             }
-            return new SimilaritiesListResponseDto("ERROR","ERROR: "+e.getMessage());
+            return new ResponseDto("ERROR","ERROR: "+e.getMessage());
         }finally{
             logger.info(debug+"END @ "+(System.currentTimeMillis()-start)+"msec.");
         }
     }
 
-    public synchronized KafkaConsumerResponseDto refreshSimilarities (String username, String password) {
-        String debug = "refreshSimilarities::username:"+username+". ";
+    public ResponseDto resetProducer (String username, String password, String producer) {
+        String debug = "resetProducer::username:"+username+". ";
+        logger.info(debug+"START.");
+        long start = System.currentTimeMillis();
+        try {
+            AuthenticationResponseDto auth = authenticate(username,password,false);
+            if (auth.getStatus().equals("SUCCESS")){
+                int rows = dbService.touchUser(username);
+                if (rows != 1) {
+                    return new ResponseDto ("ERROR", "ERROR: Unable to update last usage date in app database (code="+rows+").");
+                }
+                kafkaConsumer.resetProducer(producer);
+                dbService.deleteBenchmark(producer);
+                ResponseDto responseDto = new ResponseDto("SUCCESS", "SUCCESS");
+                return responseDto;
+            }else{
+                return new ResponseDto(auth.getStatus(),auth.getMessage());
+            }
+        }catch (Exception e){
+            logger.error(debug+"EXCEPTION: "+e.getMessage());
+            for (StackTraceElement element : e.getStackTrace()){
+                logger.error (debug+element);
+            }
+            return new ResponseDto("ERROR","ERROR: "+e.getMessage());
+        }finally{
+            logger.info(debug+"END @ "+(System.currentTimeMillis()-start)+"msec.");
+        }
+    }
+
+    public ResponseDto clearEvents (String username, String password, String producer) {
+        String debug = "clearEvents::username:"+username+". ";
+        logger.info(debug+"START.");
+        long start = System.currentTimeMillis();
+        try {
+            AuthenticationResponseDto auth = authenticate(username,password,false);
+            if (auth.getStatus().equals("SUCCESS")){
+                int rows = dbService.touchUser(username);
+                if (rows != 1) {
+                    return new ResponseDto ("ERROR", "ERROR: Unable to update last usage date in app database (code="+rows+").");
+                }
+                dbService.clearEvents(producer);
+                ResponseDto responseDto = new ResponseDto("SUCCESS", "SUCCESS");
+                return responseDto;
+            }else{
+                return new ResponseDto(auth.getStatus(),auth.getMessage());
+            }
+        }catch (Exception e){
+            logger.error(debug+"EXCEPTION: "+e.getMessage());
+            for (StackTraceElement element : e.getStackTrace()){
+                logger.error (debug+element);
+            }
+            return new ResponseDto("ERROR","ERROR: "+e.getMessage());
+        }finally{
+            logger.info(debug+"END @ "+(System.currentTimeMillis()-start)+"msec.");
+        }
+    }
+
+    public EventListResponseDto getEvents (String username, String password,
+                                                  String producer, int threshold,int limit) {
+        String debug = "getEvents::username:"+username+". ";
+        logger.info(debug+"START.");
+        long start = System.currentTimeMillis();
+        try {
+            AuthenticationResponseDto auth = authenticate(username,password,false);
+            if (auth.getStatus().equals("SUCCESS")){
+                int rows = dbService.touchUser(username);
+                if (rows != 1) {
+                    return new EventListResponseDto("ERROR", "ERROR: Unable to update last usage date in app database (code="+rows+").");
+                }
+                EventListResponseDto responseDto = new EventListResponseDto("SUCCESS", "SUCCESS");
+                responseDto.setEvents(dbService.getEvents(producer, threshold, limit));
+                return responseDto;
+            }else{
+                return new EventListResponseDto(auth.getStatus(),auth.getMessage());
+            }
+        }catch (Exception e){
+            logger.error(debug+"EXCEPTION: "+e.getMessage());
+            for (StackTraceElement element : e.getStackTrace()){
+                logger.error (debug+element);
+            }
+            return new EventListResponseDto("ERROR","ERROR: "+e.getMessage());
+        }finally{
+            logger.info(debug+"END @ "+(System.currentTimeMillis()-start)+"msec.");
+        }
+    }
+
+    public synchronized KafkaConsumerResponseDto updateConsumer (String username, String password, String category) {
+        String debug = "updateConsumer::username:"+username+". ";
         logger.info(debug+"START.");
         long start = System.currentTimeMillis();
         try {
@@ -84,15 +160,40 @@ public class Processor { /*implements ApplicationContextAware {
                 }
                 kafkaConsumer.refresh();
                 KafkaConsumerResponseDto responseDto = new KafkaConsumerResponseDto("SUCCESS", "SUCCESS");
-                responseDto.setSimilarities(kafkaConsumer.getSimilarities());
-                responseDto.setFrequencies(kafkaConsumer.getFrequencies());
-                responseDto.setTimestamps(kafkaConsumer.getTimestamps());
-                responseDto.setBenchmarks(kafkaConsumer.getBenchmarks());
                 responseDto.setCategories(kafkaConsumer.getCategories());
-                responseDto.setTrainFFTs(kafkaConsumer.getTrainFFTs());
-                responseDto.setTestFFTs(kafkaConsumer.getTestFFTs());
-                responseDto.setTrains(kafkaConsumer.getTrains());
-                responseDto.setTests(kafkaConsumer.getTests());
+                if (category == null || category.trim().isEmpty()) {
+                    responseDto.setSimilarities(kafkaConsumer.getSimilarities());
+                    responseDto.setFrequencies(kafkaConsumer.getFrequencies());
+                    responseDto.setTimestamps(kafkaConsumer.getTimestamps());
+                    responseDto.setBenchmarks(kafkaConsumer.getBenchmarks());
+                    responseDto.setMotionUrls(kafkaConsumer.getMotionUrls());
+                    responseDto.setTrainFFTs(kafkaConsumer.getTrainFFTs());
+                    responseDto.setTestFFTs(kafkaConsumer.getTestFFTs());
+                    responseDto.setTrains(kafkaConsumer.getTrains());
+                    responseDto.setTests(kafkaConsumer.getTests());
+                }else{
+                    responseDto.setSimilarities(new TreeMap<>());
+                    responseDto.setFrequencies(new TreeMap<>());
+                    responseDto.setTimestamps(new TreeMap<>());
+                    responseDto.setBenchmarks(new TreeMap<>());
+                    responseDto.setMotionUrls(new TreeMap<>());
+                    responseDto.setTrainFFTs(new TreeMap<>());
+                    responseDto.setTestFFTs(new TreeMap<>());
+                    responseDto.setTrains(new TreeMap<>());
+                    responseDto.setTests(new TreeMap<>());
+                    for (Map.Entry<String, String> c : kafkaConsumer.getCategories().entrySet()) {
+                        if (category.equalsIgnoreCase(c.getValue())) {
+                            responseDto.getSimilarities().put(c.getKey(),kafkaConsumer.getSimilarities().get(c.getKey()));
+                            responseDto.getFrequencies().put(c.getKey(),kafkaConsumer.getFrequencies().get(c.getKey()));
+                            responseDto.getBenchmarks().put(c.getKey(),kafkaConsumer.getBenchmarks().get(c.getKey()));
+                            responseDto.getMotionUrls().put(c.getKey(),kafkaConsumer.getMotionUrls().get(c.getKey()));
+                            responseDto.getTrainFFTs().put(c.getKey(),kafkaConsumer.getTrainFFTs().get(c.getKey()));
+                            responseDto.getTestFFTs().put(c.getKey(),kafkaConsumer.getTestFFTs().get(c.getKey()));
+                            responseDto.getTrains().put(c.getKey(),kafkaConsumer.getTrains().get(c.getKey()));
+                            responseDto.getTests().put(c.getKey(),kafkaConsumer.getTests().get(c.getKey()));
+                        }
+                    }
+                }
                 return responseDto;
             }else{
                 return new KafkaConsumerResponseDto(auth.getStatus(),auth.getMessage());

@@ -26,41 +26,95 @@ public class RestService implements ApplicationContextAware {
         return new ResponseEntity<>("Hello World!!",null,HttpStatus.OK);
     }
 
-    @RequestMapping(method=RequestMethod.POST,value="/getSimilaritiesByProducer",produces="application/json")
-    public ResponseEntity<SimilaritiesListResponseDto> getSimilaritiesByProducer (@RequestBody RequestDto request) {
-        String debug = "authenticate::username:"+request.getUsername()+". ";
+    @RequestMapping(method=RequestMethod.POST,value="/resetAllProducers",produces="application/json")
+    public ResponseEntity<ResponseDto> resetAllProducers (@RequestBody RequestDto request) {
+        String debug = "resetAllProducers::username:"+request.getUsername()+". ";
+        logger.info(debug + "START.");
+        long start = System.currentTimeMillis();
+        try{
+            return new ResponseEntity<>(processor.resetAllProducers(request.getUsername(), request.getPassword()),null,HttpStatus.OK);
+        }catch(Exception e){
+            logger.error(debug + "EXCEPTION: " + e.getMessage());
+            for (StackTraceElement element : e.getStackTrace()) {
+                logger.error (debug + element);
+            }
+            return new ResponseEntity<>(new ResponseDto("ERROR","ERROR: "+e.getMessage()),null,HttpStatus.INTERNAL_SERVER_ERROR);
+        }finally{
+            logger.info(debug + "END @ " + (System.currentTimeMillis()-start) + "msec.");
+        }
+    }
+
+    @RequestMapping(method=RequestMethod.POST,value="/resetProducer",produces="application/json")
+    public ResponseEntity<ResponseDto> resetProducer (@RequestBody RequestDto request) {
+        String debug = "resetProducer::username:"+request.getUsername()+",producer:"+request.getProducer()+". ";
+        logger.info(debug + "START.");
+        long start = System.currentTimeMillis();
+        try{
+            return new ResponseEntity<>(processor.resetProducer(request.getUsername(), request.getPassword(), request.getProducer()), null,HttpStatus.OK);
+        }catch(Exception e){
+            logger.error(debug + "EXCEPTION: " + e.getMessage());
+            for (StackTraceElement element : e.getStackTrace()) {
+                logger.error (debug + element);
+            }
+            return new ResponseEntity<>(new ResponseDto("ERROR","ERROR: "+e.getMessage()),null,HttpStatus.INTERNAL_SERVER_ERROR);
+        }finally{
+            logger.info(debug + "END @ " + (System.currentTimeMillis()-start) + "msec.");
+        }
+    }
+
+    @RequestMapping(method=RequestMethod.POST,value="/clearEvents",produces="application/json")
+    public ResponseEntity<ResponseDto> clearEvents (@RequestBody RequestDto request) {
+        String debug = "clearEvents::username:"+request.getUsername()+",producer:"+request.getProducer()+". ";
+        logger.info(debug + "START.");
+        long start = System.currentTimeMillis();
+        try{
+            return new ResponseEntity<>(processor.clearEvents(request.getUsername(), request.getPassword(), request.getProducer()), null,HttpStatus.OK);
+        }catch(Exception e){
+            logger.error(debug + "EXCEPTION: " + e.getMessage());
+            for (StackTraceElement element : e.getStackTrace()) {
+                logger.error (debug + element);
+            }
+            return new ResponseEntity<>(new ResponseDto("ERROR","ERROR: "+e.getMessage()),null,HttpStatus.INTERNAL_SERVER_ERROR);
+        }finally{
+            logger.info(debug + "END @ " + (System.currentTimeMillis()-start) + "msec.");
+        }
+    }
+
+    @RequestMapping(method=RequestMethod.POST,value="/getEvents",produces="application/json")
+    public ResponseEntity<EventListResponseDto> getEvents (@RequestBody RequestDto request) {
+        String debug = "getEvents::username:"+request.getUsername()+". ";
         logger.info(debug + "START.");
         long start = System.currentTimeMillis();
         try{
             if (request.getProducer() == null || request.getProducer().isEmpty()) {
-                return new ResponseEntity<>(new SimilaritiesListResponseDto("ERROR", "ERROR: No producer name in input."), null, HttpStatus.INTERNAL_SERVER_ERROR);
+                return new ResponseEntity<>(new EventListResponseDto("ERROR", "ERROR: No producer name in input."), null, HttpStatus.INTERNAL_SERVER_ERROR);
             }else
             if (request.getThreshold() == null) {
-                return new ResponseEntity<>(new SimilaritiesListResponseDto("ERROR", "ERROR: No threshold percentage in input."), null, HttpStatus.INTERNAL_SERVER_ERROR);
+                return new ResponseEntity<>(new EventListResponseDto("ERROR", "ERROR: No threshold percentage in input."), null, HttpStatus.INTERNAL_SERVER_ERROR);
             }else
             if (request.getLimit() == null) {
-                return new ResponseEntity<>(new SimilaritiesListResponseDto("ERROR", "ERROR: No result size limitation in input."), null, HttpStatus.INTERNAL_SERVER_ERROR);
+                return new ResponseEntity<>(new EventListResponseDto("ERROR", "ERROR: No result size limitation in input."), null, HttpStatus.INTERNAL_SERVER_ERROR);
             }else {
-                return new ResponseEntity<>(processor.getSimilaritiesByProducer(request.getUsername(), request.getPassword(), request.getProducer(), request.getThreshold(), request.getLimit()), null, HttpStatus.OK);
+                return new ResponseEntity<>(processor.getEvents(request.getUsername(), request.getPassword(), request.getProducer(), request.getThreshold(), request.getLimit()), null, HttpStatus.OK);
             }
         }catch(Exception e){
             logger.error(debug + "EXCEPTION: " + e.getMessage());
             for (StackTraceElement element : e.getStackTrace()) {
                 logger.error (debug + element);
             }
-            return new ResponseEntity<>(new SimilaritiesListResponseDto("ERROR","ERROR: "+e.getMessage()),null,HttpStatus.INTERNAL_SERVER_ERROR);
+            return new ResponseEntity<>(new EventListResponseDto("ERROR","ERROR: "+e.getMessage()),null,HttpStatus.INTERNAL_SERVER_ERROR);
         }finally{
             logger.info(debug + "END @ " + (System.currentTimeMillis()-start) + "msec.");
         }
     }
 
-    @RequestMapping(method=RequestMethod.POST,value="/refreshSimilarities",produces="application/json")
-    public ResponseEntity<KafkaConsumerResponseDto> refreshSimilarities (@RequestBody RequestDto request) {
-        String debug = "authenticate::username:"+request.getUsername()+". ";
+    @RequestMapping(method=RequestMethod.POST,value="/updateConsumer",produces="application/json")
+    public ResponseEntity<KafkaConsumerResponseDto> updateConsumer (@RequestBody RequestDto request) {
+        String debug = "updateConsumer::username:"+request.getUsername()+". ";
         logger.info(debug + "START.");
         long start = System.currentTimeMillis();
         try{
-            return new ResponseEntity<>(processor.refreshSimilarities(request.getUsername(),request.getPassword()),null,HttpStatus.OK);
+            return new ResponseEntity<>(processor.updateConsumer(request.getUsername(), request.getPassword(), request.getCategory()),null,HttpStatus.OK);
         }catch(Exception e){
             logger.error(debug + "EXCEPTION: " + e.getMessage());
             for (StackTraceElement element : e.getStackTrace()) {

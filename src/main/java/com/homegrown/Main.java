@@ -50,7 +50,8 @@ public final class Main {
 				runConsumer (brokers, topic, id, group, offsetReset, pollingCount);
 			}else if (role.equalsIgnoreCase("producer")) {
 				String category = args.length>1?args[1]:appProperties.getProperty("category");
-				runProducer (brokers, topic, category, id);
+				String motionUrl = args.length>2?args[2]:appProperties.getProperty("motionUrl");
+				runProducer (brokers, id, topic, category, motionUrl);
 			}else{
 				logger.error(debugMsg+"Unknown role: "+role+"!!!");
 			}
@@ -86,7 +87,7 @@ public final class Main {
 					double[] testFFT = sampler.powerSpectrum(sampler.normalizeQuantiz(record.value()),transformationSize);
 					double similarity = sampler.cosineSimilarity (testFFT,trainFFT);
 					System.out.println("Extracted test sample of size: " + record.value().length);
-					System.out.println("Similarity: " + (int)Math.round(100*similarity) + " %.");
+					System.out.println("Event: " + (int)Math.round(100*similarity) + " %.");
 				}
 			}
 			consumer.commitAsync();
@@ -94,7 +95,7 @@ public final class Main {
 		//consumer.close();
 	}
 
-	private static void runProducer (String brokers,String topic, String category, String id) {
+	private static void runProducer (String brokers,String id, String topic, String category, String motionUrl) {
 		String debugMsg = "runProducer::";
 		Producer<String,byte[]> producer = ProducerCreator.createProducer (brokers,id);
 		Properties appProperties = (Properties) ctx.getBean("appProperties");
@@ -118,7 +119,7 @@ public final class Main {
 
 		while (true) {
 			byte[] sample = sampler.record (sampleRate,samplesNumber,recordingsDirectory);
-			final ProducerRecord<String,byte[]> record = new ProducerRecord<>(topic,id+"_"+sampleRate+"_"+category,sample);
+			final ProducerRecord<String,byte[]> record = new ProducerRecord<>(topic,id+"_"+sampleRate+"_"+category+"_"+motionUrl,sample);
 			try{
 				RecordMetadata metadata = producer.send(record).get();
 				System.out.println("Record sent with key '" + id + "' to partition " + metadata.partition() + " with offset " + metadata.offset());

@@ -2,8 +2,8 @@ package com.homegrown.sampling;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 
-import com.homegrown.Main;
 import org.apache.commons.math3.complex.Complex;
 import org.apache.commons.math3.transform.TransformType;
 import org.apache.commons.math3.transform.DftNormalization;
@@ -48,6 +48,23 @@ public final class Sampler {
 
 	public double[] recordAndTransform (float sampleRate, int samplesNumber, int transformationSize, String recordingsDirectory) {
 		return powerSpectrum(normalizeQuantiz(record(sampleRate,samplesNumber,recordingsDirectory)),transformationSize);
+	}
+
+	public double[] normalizeQuantiz (List<Byte> signal) {
+		int maxAbsValue = 0;
+		int powerOfTwoLength = 2;
+		while (powerOfTwoLength < signal.size()) {
+			powerOfTwoLength<<=1;
+		}
+		double[] normalized = new double[powerOfTwoLength>>1];
+		for (int i=0; i<normalized.length; ++i) {
+			int temp = signal.get(i)<0?-signal.get(i):signal.get(i);
+			if (temp > maxAbsValue) maxAbsValue = temp;
+		}
+		for (int i=0; i<normalized.length; ++i) {
+			normalized[i] = ((double)signal.get(i))/maxAbsValue;
+		}
+		return normalized;
 	}
 
 	public double[] normalizeQuantiz (byte[] signal) {
