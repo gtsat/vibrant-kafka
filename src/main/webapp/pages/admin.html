@@ -41,6 +41,8 @@
 			display:     inline-block;
 		}
 	</style>
+	<link rel="shortcut icon" href="images/logos/reel-tape-recorder-favicon.png" type="image/x-icon">
+	<link rel="icon" href="images/logos/reel-tape-recorder-favicon.png" type="image/x-icon">
 </head>
 <!-- ADD THE CLASS layout-top-nav TO REMOVE THE SIDEBAR. -->
 <body class="skin-blue layout-top-nav" ng-app='myApp' ng-controller='topController'>
@@ -86,7 +88,7 @@
 					<div class="box-header">
 						<h3 class="box-title">User Management</h3>
 					</div><!-- /.box-header -->
-					<p><span class="error" ng-show="errorMessageShow">{{errorMessage}}</span></p>
+					<p ng-repeat="errorMessage in errorMessages"><span class="error" ng-show="errorMessageShow">{{errorMessage}}</span></p>
 					<div class="box-body">
 						<table id="exampleX" class="display table table-bordered table-striped">
 							<thead>

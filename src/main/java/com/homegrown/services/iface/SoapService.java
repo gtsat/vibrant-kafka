@@ -38,6 +38,7 @@ public class SoapService implements ApplicationContextAware {
             JAXB_CONTEXT = JAXBContext.newInstance
                     (
                             EventListResponseDto.class,
+                            BenchmarkListResponseDto.class,
                             AuthenticationResponseDto.class,
                             KafkaConsumerResponseDto.class,
                             UsersListResponseDto.class,
@@ -141,13 +142,42 @@ public class SoapService implements ApplicationContextAware {
         logger.info(debug + "START.");
         long start = System.currentTimeMillis();
         try{
-            return processor.getEvents(username, password, producer, threshold, limit);
+            if (threshold == null || limit == null) {
+                return processor.getAllEvents(username, password, producer);
+            }else{
+                return processor.getEvents(username, password, producer, threshold, limit);
+            }
         }catch(Exception e){
             logger.error(debug + "EXCEPTION: " + e.getMessage());
             for (StackTraceElement element : e.getStackTrace()) {
                 logger.error (debug + element);
             }
             return new EventListResponseDto("ERROR","ERROR: "+e.getMessage());
+        }finally{
+            logger.info(debug + "END @ " + (System.currentTimeMillis()-start) + "msec.");
+        }
+    }
+
+    @WebMethod
+    public BenchmarkListResponseDto getBenchmarkHistory (
+            @XmlElement(required=true)
+            @WebParam(name="username") String username,
+            @XmlElement(required=true)
+            @WebParam(name="password") String password,
+            @XmlElement(required=true)
+            @WebParam(name="producer") String producer
+    ) {
+        String debug = "getBenchmarkHistory::username:"+username+". ";
+        logger.info(debug + "START.");
+        long start = System.currentTimeMillis();
+        try{
+            return processor.getBenchmarkHistory(username, password, producer);
+        }catch(Exception e){
+            logger.error(debug + "EXCEPTION: " + e.getMessage());
+            for (StackTraceElement element : e.getStackTrace()) {
+                logger.error (debug + element);
+            }
+            return new BenchmarkListResponseDto("ERROR","ERROR: "+e.getMessage());
         }finally{
             logger.info(debug + "END @ " + (System.currentTimeMillis()-start) + "msec.");
         }

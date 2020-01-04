@@ -136,35 +136,16 @@ public class KafkaConsumer {
                 catch (Exception e) {}
                 try {categories.put(id,key[2]);}
                 catch (Exception e) {categories.put(id,appProperties.getProperty("defaultCategory"));}
-                double[] normalized = sampler.normalizeQuantiz(record.value());
-                double[] trainFFT = trainFFTs.get(id);
-                float frequency = Float.parseFloat(key[1]);
+                try {
+                    double[] normalized = sampler.normalizeQuantiz(record.value());
+                    double[] trainFFT = trainFFTs.get(id);
+                    float frequency = Float.parseFloat(key[1]);
 
-                if (trainFFT != null && frequency == frequencies.get(id)) {
-                    double[] testFFT = sampler.powerSpectrum(normalized, transformationSize);
-                    double similarity = sampler.cosineSimilarity(testFFT, trainFFT);
-                    logger.info(debugMsg + "1. Extracted test sample of size: " + record.value().length);
-                    logger.info(debugMsg + "1. Similarity: " + similarity + ".");
-
-                    tests.put(id, computeHistogram(record.value()));
-                    testFFTs.put(id, testFFT);
-                    similarities.put(id, (int) Math.round(similarity * 100));
-                    timestamps.put(id, new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Timestamp(record.timestamp())));
-
-                    dbService.insertEvent(id, (int) Math.round(similarity * 100),record.offset(),new Timestamp(record.timestamp()));
-                }else{
-                    BenchmarkSample dbSample = dbService.getBenchmark(id);
-                    if (trainFFT == null && dbSample != null && frequency == dbSample.getFrequency()) {
-                        trainFFT = sampler.powerSpectrum(sampler.normalizeQuantiz(dbSample.getSignal()), transformationSize);
-                        trains.put(id, computeHistogram(dbSample.getSignal()));
-                        benchmarks.put(id, new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(dbSample.getCreationDate()));
-                        frequencies.put(id, dbSample.getFrequency());
-                        trainFFTs.put(id, trainFFT);
-
+                    if (trainFFT != null && frequency == frequencies.get(id)) {
                         double[] testFFT = sampler.powerSpectrum(normalized, transformationSize);
                         double similarity = sampler.cosineSimilarity(testFFT, trainFFT);
-                        logger.info(debugMsg + "2. Extracted test sample of size: " + record.value().length);
-                        logger.info(debugMsg + "2. Similarity: " + similarity + ".");
+                        logger.info(debugMsg + "1. Extracted test sample of size: " + record.value().length);
+                        logger.info(debugMsg + "1. Similarity: " + similarity + ".");
 
                         tests.put(id, computeHistogram(record.value()));
                         testFFTs.put(id, testFFT);
@@ -172,29 +153,65 @@ public class KafkaConsumer {
                         timestamps.put(id, new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Timestamp(record.timestamp())));
 
                         dbService.insertEvent(id, (int) Math.round(similarity * 100), record.offset(), new Timestamp(record.timestamp()));
-                    }else{
-                        if (dbSample != null) {
-                            dbService.deleteBenchmark(id);
+                    } else {
+                        BenchmarkSample dbSample = dbService.getBenchmark(id);
+                        if (trainFFT == null && dbSample != null && dbSample.getSignal() != null && frequency == dbSample.getFrequency()) {
+                            trainFFT = sampler.powerSpectrum(sampler.normalizeQuantiz(dbSample.getSignal()), transformationSize);
+                            trains.put(id, computeHistogram(dbSample.getSignal()));
+                            benchmarks.put(id, dbSample.getCreationDate());
+                            frequencies.put(id, dbSample.getFrequency());
+                            trainFFTs.put(id, trainFFT);
+
+                            double[] testFFT = sampler.powerSpectrum(normalized, transformationSize);
+                            double similarity = sampler.cosineSimilarity(testFFT, trainFFT);
+                            logger.info(debugMsg + "2. Extracted test sample of size: " + record.value().length);
+                            logger.info(debugMsg + "2. Similarity: " + similarity + ".");
+
+                            tests.put(id, computeHistogram(record.value()));
+                            testFFTs.put(id, testFFT);
+                            similarities.put(id, (int) Math.round(similarity * 100));
+                            timestamps.put(id, new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Timestamp(record.timestamp())));
+
+                            dbService.insertEvent(id, (int) Math.round(similarity * 100), record.offset(), new Timestamp(record.timestamp()));
+                        } else{
+                            dbService.insertBenchmark (id,frequency,record.value(),record.offset(),new Timestamp(record.timestamp()));
+
+                            trainFFT = sampler.powerSpectrum(normalized, transformationSize);
+                            logger.info(debugMsg + "Extracted train sample of size: " + record.value().length);
+
+                            benchmarks.put(id, new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Timestamp(record.timestamp())));
+                            trains.put(id, computeHistogram(record.value()));
+                            frequencies.put(id, frequency);
+                            trainFFTs.put(id, trainFFT);
                         }
-                        dbService.insertBenchmark(id, frequency, record.value());
-
-                        trainFFT = sampler.powerSpectrum(normalized, transformationSize);
-                        logger.info(debugMsg + "Extracted train sample of size: " + record.value().length);
-
-                        benchmarks.put(id, new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Timestamp(record.timestamp())));
-                        trains.put(id, computeHistogram(record.value()));
-                        frequencies.put(id, frequency);
-                        trainFFTs.put(id, trainFFT);
                     }
+                }catch(Exception e){
+                    for (StackTraceElement element : e.getStackTrace()){
+                        logger.error (debugMsg+element);
+                    }
+                    logger.error(debugMsg+"EXCEPTION: "+e.getMessage());
                 }
             }
             consumer.commitAsync();
         }
 
-        for (Map.Entry<String,String> entry : timestamps.entrySet()) {
-            try {
-                if (entry.getValue() == null || entry.getValue().isEmpty()
-                        || new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(entry.getValue()).before(new Date(System.currentTimeMillis()-60000))) {
+        try{
+            for (Map.Entry<String, String> entry : timestamps.entrySet()) {
+                try {
+                    if (entry.getValue() == null || entry.getValue().isEmpty()
+                            || new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").parse(entry.getValue()).before(new Date(System.currentTimeMillis() - 60000))) {
+                        trains.remove(entry.getKey());
+                        tests.remove(entry.getKey());
+                        trainFFTs.remove(entry.getKey());
+                        testFFTs.remove(entry.getKey());
+                        timestamps.remove(entry.getKey());
+                        benchmarks.remove(entry.getKey());
+                        similarities.remove(entry.getKey());
+                        frequencies.remove(entry.getKey());
+                        categories.remove(entry.getKey());
+                        motionUrls.remove(entry.getKey());
+                    }
+                } catch (Exception e) {
                     trains.remove(entry.getKey());
                     tests.remove(entry.getKey());
                     trainFFTs.remove(entry.getKey());
@@ -206,18 +223,12 @@ public class KafkaConsumer {
                     categories.remove(entry.getKey());
                     motionUrls.remove(entry.getKey());
                 }
-            }catch(Exception e){
-                trains.remove(entry.getKey());
-                tests.remove(entry.getKey());
-                trainFFTs.remove(entry.getKey());
-                testFFTs.remove(entry.getKey());
-                timestamps.remove(entry.getKey());
-                benchmarks.remove(entry.getKey());
-                similarities.remove(entry.getKey());
-                frequencies.remove(entry.getKey());
-                categories.remove(entry.getKey());
-                motionUrls.remove(entry.getKey());
             }
+        }catch(Exception e){
+            for (StackTraceElement element : e.getStackTrace()){
+                logger.error (debugMsg+element);
+            }
+            logger.error(debugMsg+"EXCEPTION: "+e.getMessage());
         }
         //consumer.close();
     }

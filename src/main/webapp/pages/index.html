@@ -35,14 +35,17 @@
 			display:     inline-block;
 		}
 	</style>
+	<link rel="shortcut icon" href="images/logos/reel-tape-recorder-favicon.png" type="image/x-icon">
+	<link rel="icon" href="images/logos/reel-tape-recorder-favicon.png" type="image/x-icon">
 </head>
 <body class="login-page" ng-app='myApp' ng-controller='validateCtrl'>
 <div class="login-box">
 	<div class="login-logo">
+		<a href="login.html"><img src="images/logos/anim_Revanitran.gif" alt="vibrant-kafka-logo"></a>
 		<a href="login.html"><b>VibrantKafka </b>{{version}}</a>
 	</div><!-- /.login-logo -->
 	<div class="login-box-body">
-		<p><span class="error" ng-show="errorMessageShow">{{errorMessage}}</span></p>
+		<p ng-repeat="errorMessage in errorMessages"><span class="error" ng-show="errorMessageShow">{{errorMessage}}</span></p>
 		<p class="login-box-msg" ng-show="!errorMessageShow">Sign in to start your session</p>
 		<ng-form style="margin:10px;padding:10px" name="myForm">
 			<div class="form-group has-feedback">

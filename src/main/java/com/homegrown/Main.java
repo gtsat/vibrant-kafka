@@ -1,5 +1,6 @@
 package com.homegrown;
 
+import java.text.ParseException;
 import java.util.Properties;
 import org.apache.log4j.Logger;
 import java.util.concurrent.ExecutionException;
@@ -114,11 +115,21 @@ public final class Main {
 			sampleRate = Float.parseFloat(appProperties.getProperty("sampleRate"));
 		}
 		int samplesNumber = Integer.parseInt(appProperties.getProperty("samplesNumber"));
-		String recordingsDirectory = appProperties.getProperty("recordingsDirectory");
+		String recordingsDirectory = "/tmp/";
+		Boolean saveOnDisk = false;
+		try{
+			recordingsDirectory = appProperties.getProperty("recordingsDirectory");
+			saveOnDisk = Boolean.parseBoolean(appProperties.getProperty("saveOnDisk"));
+		}catch (Exception e){
+			for (StackTraceElement elem : e.getStackTrace()) {
+				logger.error(elem);
+			}
+			logger.error(debugMsg+e.getMessage());
+		}
 		Sampler sampler = new Sampler();
 
 		while (true) {
-			byte[] sample = sampler.record (sampleRate,samplesNumber,recordingsDirectory);
+			byte[] sample = sampler.record (sampleRate,samplesNumber,recordingsDirectory,saveOnDisk);
 			final ProducerRecord<String,byte[]> record = new ProducerRecord<>(topic,id+"_"+sampleRate+"_"+category+"_"+motionUrl,sample);
 			try{
 				RecordMetadata metadata = producer.send(record).get();

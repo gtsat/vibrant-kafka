@@ -34,6 +34,9 @@
     <link rel="stylesheet" href="plugins/chosen/prism.css">
     <link rel="stylesheet" href="plugins/chosen/chosen.css">
 
+    <link rel="shortcut icon" href="images/logos/reel-tape-recorder-favicon.png" type="image/x-icon">
+    <link rel="icon" href="images/logos/reel-tape-recorder-favicon.png" type="image/x-icon">
+
     <script src="plugins/chosen/prototype-1.7.0.0.js" type="text/javascript"></script>
     <script src="plugins/chosen/jquery-3.2.1.min.js" type="text/javascript"></script>
     <script src="plugins/chosen/chosen.jquery.js" type="text/javascript"></script>
@@ -107,17 +110,17 @@
         }
       };
     </script>
-
   </head>
   <body class="register-page" ng-app='myApp' ng-controller='registerController'>
     <div class="register-box">
       <div class="register-logo">
+        <a href="login.html"><img src="images/logos/anim_Revanitran.gif" alt="vibrant-kafka-logo"></a>
         <a href="login.html"><b>VibrantKafka </b>{{version}}</a>
       </div>
 
       <div class="register-box-body">
         <p class="login-box-msg" ng-show="!errorMessageShow">Register a new membership</p>
-        <p><span class="error" ng-show="errorMessageShow">{{errorMessage}}</span></p>
+        <p ng-repeat="errorMessage in errorMessages"><span class="error" ng-show="errorMessageShow">{{errorMessage}}</span></p>
         <ng-form name="myForm" style="margin:10px;padding:10px">
           <div class="form-group has-feedback">
             <input type="text" class="form-control" ng-model="username" name="username" required placeholder="Username"/>

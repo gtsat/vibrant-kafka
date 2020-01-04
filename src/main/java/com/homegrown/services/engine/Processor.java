@@ -30,6 +30,8 @@ public class Processor {
 
     private static Logger logger = Logger.getLogger(Processor.class);
 
+
+
     public ResponseDto resetAllProducers (String username, String password) {
         String debug = "resetAllProducers::username:"+username+". ";
         logger.info(debug+"START.");
@@ -51,10 +53,10 @@ public class Processor {
                 return new ResponseDto(auth.getStatus(),auth.getMessage());
             }
         }catch (Exception e){
-            logger.error(debug+"EXCEPTION: "+e.getMessage());
             for (StackTraceElement element : e.getStackTrace()){
                 logger.error (debug+element);
             }
+            logger.error(debug+"EXCEPTION: "+e.getMessage());
             return new ResponseDto("ERROR","ERROR: "+e.getMessage());
         }finally{
             logger.info(debug+"END @ "+(System.currentTimeMillis()-start)+"msec.");
@@ -80,10 +82,10 @@ public class Processor {
                 return new ResponseDto(auth.getStatus(),auth.getMessage());
             }
         }catch (Exception e){
-            logger.error(debug+"EXCEPTION: "+e.getMessage());
             for (StackTraceElement element : e.getStackTrace()){
                 logger.error (debug+element);
             }
+            logger.error(debug+"EXCEPTION: "+e.getMessage());
             return new ResponseDto("ERROR","ERROR: "+e.getMessage());
         }finally{
             logger.info(debug+"END @ "+(System.currentTimeMillis()-start)+"msec.");
@@ -108,11 +110,67 @@ public class Processor {
                 return new ResponseDto(auth.getStatus(),auth.getMessage());
             }
         }catch (Exception e){
-            logger.error(debug+"EXCEPTION: "+e.getMessage());
             for (StackTraceElement element : e.getStackTrace()){
                 logger.error (debug+element);
             }
+            logger.error(debug+"EXCEPTION: "+e.getMessage());
             return new ResponseDto("ERROR","ERROR: "+e.getMessage());
+        }finally{
+            logger.info(debug+"END @ "+(System.currentTimeMillis()-start)+"msec.");
+        }
+    }
+
+    public BenchmarkListResponseDto getBenchmarkHistory (String username, String password, String producer) {
+        String debug = "getBenchmarkHistory::username:"+username+". ";
+        logger.info(debug+"START.");
+        long start = System.currentTimeMillis();
+        try {
+            AuthenticationResponseDto auth = authenticate(username,password,false);
+            if (auth.getStatus().equals("SUCCESS")){
+                int rows = dbService.touchUser(username);
+                if (rows != 1) {
+                    return new BenchmarkListResponseDto("ERROR", "ERROR: Unable to update last usage date in app database (code="+rows+").");
+                }
+                BenchmarkListResponseDto responseDto = new BenchmarkListResponseDto("SUCCESS", "SUCCESS");
+                responseDto.setBenchmarks(dbService.getBenchmarkHistory(producer));
+                return responseDto;
+            }else{
+                return new BenchmarkListResponseDto(auth.getStatus(),auth.getMessage());
+            }
+        }catch (Exception e){
+            for (StackTraceElement element : e.getStackTrace()){
+                logger.error (debug+element);
+            }
+            logger.error(debug+"EXCEPTION: "+e.getMessage());
+            return new BenchmarkListResponseDto("ERROR","ERROR: "+e.getMessage());
+        }finally{
+            logger.info(debug+"END @ "+(System.currentTimeMillis()-start)+"msec.");
+        }
+    }
+
+    public EventListResponseDto getAllEvents (String username, String password, String producer) {
+        String debug = "getAllEvents::username:"+username+". ";
+        logger.info(debug+"START.");
+        long start = System.currentTimeMillis();
+        try {
+            AuthenticationResponseDto auth = authenticate(username,password,false);
+            if (auth.getStatus().equals("SUCCESS")){
+                int rows = dbService.touchUser(username);
+                if (rows != 1) {
+                    return new EventListResponseDto("ERROR", "ERROR: Unable to update last usage date in app database (code="+rows+").");
+                }
+                EventListResponseDto responseDto = new EventListResponseDto("SUCCESS", "SUCCESS");
+                responseDto.setEvents(dbService.getEvents(producer));
+                return responseDto;
+            }else{
+                return new EventListResponseDto(auth.getStatus(),auth.getMessage());
+            }
+        }catch (Exception e){
+            for (StackTraceElement element : e.getStackTrace()){
+                logger.error (debug+element);
+            }
+            logger.error(debug+"EXCEPTION: "+e.getMessage());
+            return new EventListResponseDto("ERROR","ERROR: "+e.getMessage());
         }finally{
             logger.info(debug+"END @ "+(System.currentTimeMillis()-start)+"msec.");
         }
@@ -137,10 +195,10 @@ public class Processor {
                 return new EventListResponseDto(auth.getStatus(),auth.getMessage());
             }
         }catch (Exception e){
-            logger.error(debug+"EXCEPTION: "+e.getMessage());
             for (StackTraceElement element : e.getStackTrace()){
                 logger.error (debug+element);
             }
+            logger.error(debug+"EXCEPTION: "+e.getMessage());
             return new EventListResponseDto("ERROR","ERROR: "+e.getMessage());
         }finally{
             logger.info(debug+"END @ "+(System.currentTimeMillis()-start)+"msec.");
@@ -199,10 +257,10 @@ public class Processor {
                 return new KafkaConsumerResponseDto(auth.getStatus(),auth.getMessage());
             }
         }catch (Exception e){
-            logger.error(debug+"EXCEPTION: "+e.getMessage());
             for (StackTraceElement element : e.getStackTrace()){
                 logger.error (debug+element);
             }
+            logger.error(debug+"EXCEPTION: "+e.getMessage());
             return new KafkaConsumerResponseDto("ERROR","ERROR: "+e.getMessage());
         }finally{
             logger.info(debug+"END @ "+(System.currentTimeMillis()-start)+"msec.");
@@ -345,10 +403,10 @@ public class Processor {
                 return new ResponseDto(auth.getStatus(),auth.getMessage());
             }
         }catch (Exception e){
-            logger.error(debug+"EXCEPTION: "+e.getMessage());
             for (StackTraceElement element : e.getStackTrace()){
                 logger.error (debug+element);
             }
+            logger.error(debug+"EXCEPTION: "+e.getMessage());
             return new ResponseDto("ERROR","ERROR: "+e.getMessage());
         }finally{
             logger.info(debug+"END @ "+(System.currentTimeMillis()-start)+"msec.");
@@ -380,10 +438,10 @@ public class Processor {
                 return new ResponseDto(auth.getStatus(),auth.getMessage());
             }
         }catch (Exception e){
-            logger.error(debug+"EXCEPTION: "+e.getMessage());
             for (StackTraceElement element : e.getStackTrace()){
                 logger.error (debug+element);
             }
+            logger.error(debug+"EXCEPTION: "+e.getMessage());
             return new ResponseDto("ERROR","ERROR: "+e.getMessage());
         }finally{
             logger.info(debug+"END @ "+(System.currentTimeMillis()-start)+"msec.");
@@ -419,10 +477,10 @@ public class Processor {
                 return new ResponseDto(auth.getStatus(),auth.getMessage());
             }
         }catch (Exception e){
-            logger.error(debug+"EXCEPTION: "+e.getMessage());
             for (StackTraceElement element : e.getStackTrace()){
                 logger.error (debug+element);
             }
+            logger.error(debug+"EXCEPTION: "+e.getMessage());
             return new ResponseDto("ERROR","ERROR: "+e.getMessage());
         }finally{
             logger.info(debug+"END @ "+(System.currentTimeMillis()-start)+"msec.");
@@ -452,10 +510,10 @@ public class Processor {
                 return new UsersListResponseDto(auth.getStatus(),auth.getMessage());
             }
         }catch (Exception e){
-            logger.error(debug+"EXCEPTION: "+e.getMessage());
             for (StackTraceElement element : e.getStackTrace()){
                 logger.error (debug+element);
             }
+            logger.error(debug+"EXCEPTION: "+e.getMessage());
             return new UsersListResponseDto("ERROR","ERROR: "+e.getMessage());
         }finally{
             logger.info(debug+"END @ "+(System.currentTimeMillis()-start)+"msec.");

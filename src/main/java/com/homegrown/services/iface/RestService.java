@@ -89,11 +89,8 @@ public class RestService implements ApplicationContextAware {
             if (request.getProducer() == null || request.getProducer().isEmpty()) {
                 return new ResponseEntity<>(new EventListResponseDto("ERROR", "ERROR: No producer name in input."), null, HttpStatus.INTERNAL_SERVER_ERROR);
             }else
-            if (request.getThreshold() == null) {
-                return new ResponseEntity<>(new EventListResponseDto("ERROR", "ERROR: No threshold percentage in input."), null, HttpStatus.INTERNAL_SERVER_ERROR);
-            }else
-            if (request.getLimit() == null) {
-                return new ResponseEntity<>(new EventListResponseDto("ERROR", "ERROR: No result size limitation in input."), null, HttpStatus.INTERNAL_SERVER_ERROR);
+            if (request.getThreshold() == null || request.getLimit() == null) {
+                return new ResponseEntity<>(processor.getAllEvents(request.getUsername(), request.getPassword(), request.getProducer()), null, HttpStatus.OK);
             }else {
                 return new ResponseEntity<>(processor.getEvents(request.getUsername(), request.getPassword(), request.getProducer(), request.getThreshold(), request.getLimit()), null, HttpStatus.OK);
             }
@@ -103,6 +100,24 @@ public class RestService implements ApplicationContextAware {
                 logger.error (debug + element);
             }
             return new ResponseEntity<>(new EventListResponseDto("ERROR","ERROR: "+e.getMessage()),null,HttpStatus.INTERNAL_SERVER_ERROR);
+        }finally{
+            logger.info(debug + "END @ " + (System.currentTimeMillis()-start) + "msec.");
+        }
+    }
+
+    @RequestMapping(method=RequestMethod.POST,value="/getBenchmarkHistory",produces="application/json")
+    public ResponseEntity<BenchmarkListResponseDto> getBenchmarkHistory (@RequestBody RequestDto request) {
+        String debug = "getBenchmarkHistory::username:"+request.getUsername()+". ";
+        logger.info(debug + "START.");
+        long start = System.currentTimeMillis();
+        try{
+            return new ResponseEntity<>(processor.getBenchmarkHistory(request.getUsername(), request.getPassword(), request.getProducer()), null, HttpStatus.OK);
+        }catch(Exception e){
+            logger.error(debug + "EXCEPTION: " + e.getMessage());
+            for (StackTraceElement element : e.getStackTrace()) {
+                logger.error (debug + element);
+            }
+            return new ResponseEntity<>(new BenchmarkListResponseDto("ERROR","ERROR: "+e.getMessage()),null,HttpStatus.INTERNAL_SERVER_ERROR);
         }finally{
             logger.info(debug + "END @ " + (System.currentTimeMillis()-start) + "msec.");
         }

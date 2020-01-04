@@ -46,8 +46,8 @@ public final class Sampler {
 		}
 	}
 
-	public double[] recordAndTransform (float sampleRate, int samplesNumber, int transformationSize, String recordingsDirectory) {
-		return powerSpectrum(normalizeQuantiz(record(sampleRate,samplesNumber,recordingsDirectory)),transformationSize);
+	public double[] recordAndTransform (float sampleRate, int samplesNumber, int transformationSize, String recordingsDirectory, Boolean save) {
+		return powerSpectrum(normalizeQuantiz(record(sampleRate,samplesNumber,recordingsDirectory,save)),transformationSize);
 	}
 
 	public double[] normalizeQuantiz (List<Byte> signal) {
@@ -107,7 +107,7 @@ public final class Sampler {
 		return powerSpectrum;
 	}
 
-	public byte[] record (final float sampleRate, int samplesNumber, String recordingsDirectory) {
+	public byte[] record (final float sampleRate, int samplesNumber, String recordingsDirectory, Boolean save) {
 		final SoundRecordingUtil recorder = new SoundRecordingUtil();
 		final long durationMsec = (long)(1000.0*Math.ceil(samplesNumber/sampleRate));
 		Thread recordThread = new Thread(new Runnable() {
@@ -132,7 +132,9 @@ public final class Sampler {
 		try{
 			recorder.stop();
 			//System.err.println("%% STOPPED");
-			recorder.save (new File(recordingsDirectory+"/recording"+System.currentTimeMillis()+".wav"));
+			if (save!=null && save.booleanValue()) {
+				recorder.save(new File(recordingsDirectory + "/recording" + System.currentTimeMillis() + ".wav"));
+			}
 			return recorder.getBytes();
 		}catch (IOException ex){ex.printStackTrace();
 		}finally{ /*System.err.println("%% DONE");*/ }

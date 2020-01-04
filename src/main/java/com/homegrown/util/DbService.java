@@ -5,6 +5,7 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.apache.log4j.Logger;
 
+import java.sql.Clob;
 import java.text.SimpleDateFormat;
 import java.io.InputStreamReader;
 import java.io.BufferedReader;
@@ -23,11 +24,10 @@ public class DbService {
     public JdbcTemplate getDbTemplate() {return dbTemplate;}
     public void setDbTemplate(JdbcTemplate dbTemplate) {this.dbTemplate = dbTemplate;}
 
-
     public int deleteBenchmark (String producer) {
         try{
             assert (dbTemplate != null);
-            String sql = "DELETE FROM benchmarks WHERE producer=?";
+            String sql = "UPDATE benchmarks SET sample = NULL WHERE producer=? ORDER BY offset DESC LIMIT 1";
             logger.info("DBService | deleteBenchmark() | Executing query: "+sql);
             return dbTemplate.update(sql,producer);
         }catch (Exception e){
@@ -39,9 +39,9 @@ public class DbService {
         return -1;
     }
 
-    public int insertBenchmark (String producer, float frequency, byte[] sample) {
+    public int insertBenchmark (String producer, float frequency, byte[] sample, long offset, Timestamp timestamp) {
         try{
-            String sql = "INSERT INTO benchmarks (producer,frequency,sample,creation_date) VALUES (?,?,?,CURRENT_TIMESTAMP)";
+            String sql = "INSERT INTO benchmarks (offset,producer,frequency,sample,creation_date) VALUES (?,?,?,?,?)";
             logger.info("DBService | insertBenchmark() | Executing query: "+sql);
             StringBuilder str = new StringBuilder();
             for (byte b : sample) {
@@ -51,7 +51,7 @@ public class DbService {
             if (str.length()>0) {
                 str.deleteCharAt(0);
             }
-            return dbTemplate.update(sql,producer,frequency,str.toString());
+            return dbTemplate.update(sql,offset,producer,frequency,str.toString(),timestamp);
         }catch (Exception e){
             for (StackTraceElement elem : e.getStackTrace()) {
                 logger.error(elem);
@@ -63,25 +63,31 @@ public class DbService {
 
     private static class BenchmarkSampleMapper implements RowMapper {
         public Object mapRow (ResultSet rs, int rowNum) throws SQLException {
-            BenchmarkSample sample = null;
             try{
-                BufferedReader b = new BufferedReader(new InputStreamReader((rs.getClob("SAMPLE").getAsciiStream())));
-                List<Byte> data = new ArrayList<>();
-                for (String line=null;(line = b.readLine())!=null;) {
-                    data.add((byte)Integer.parseInt(line));
-                }
-                sample = new BenchmarkSample(
+                List<Byte> data = null;
+                try{
+                    if (rs.findColumn("SAMPLE") >= 0) {
+                        Clob clob = rs.getClob("SAMPLE");
+                        BufferedReader b = new BufferedReader(new InputStreamReader((clob.getAsciiStream())));
+                        data = new ArrayList<>();
+                        for (String line = null; (line = b.readLine()) != null; ) {
+                            data.add((byte) Integer.parseInt(line));
+                        }
+                    }
+                }catch(Exception e){}
+                return new BenchmarkSample(
                         rs.getString("PRODUCER"),
                         rs.getFloat("FREQUENCY"),
                         data,
-                        rs.getTimestamp("CREATION_DATE"));
+                        rs.getLong("OFFSET"),
+                        new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(rs.getTimestamp("CREATION_DATE")));
             }catch (Exception e) {
                 for (StackTraceElement elem : e.getStackTrace()) {
                     logger.error(elem);
                 }
                 logger.error("DBService | BenchmarkSampleMapper | EXCEPTION:\n" + e.getMessage() + "\n" + e);
             }
-            return sample;
+            return null;
         }
     }
 
@@ -89,7 +95,7 @@ public class DbService {
         BenchmarkSample sample = null;
         try{
             assert (dbTemplate != null);
-            String sql = "SELECT producer,frequency,sample,creation_date FROM benchmarks WHERE producer=?";
+            String sql = "SELECT producer,frequency,sample,offset,creation_date FROM benchmarks WHERE producer=? ORDER BY offset DESC LIMIT 1";
             logger.info("DBService | getBenchmark() | Executing query: "+sql);
             sample = (BenchmarkSample) dbTemplate.queryForObject (sql, new Object[]{producer}, new BenchmarkSampleMapper());
         }catch (Exception e){
@@ -99,6 +105,21 @@ public class DbService {
             logger.error("DBService | getBenchmark() | EXCEPTION:\n" + e.getMessage() + "\n" + e);
         }
         return sample;
+    }
+
+    public List<BenchmarkSample> getBenchmarkHistory (String producer) {
+        try{
+            assert (dbTemplate != null);
+            String sql = "SELECT producer,frequency,offset,creation_date FROM benchmarks WHERE producer=? ORDER BY offset";
+            logger.info("DBService | getBenchmarkHistory() | Executing query: "+sql);
+            return dbTemplate.query(sql, new Object[]{producer}, new BenchmarkSampleMapper());
+        }catch (Exception e){
+            for (StackTraceElement elem : e.getStackTrace()) {
+                logger.error(elem);
+            }
+            logger.error("DBService | getBenchmarkHistory() | EXCEPTION:\n" + e.getMessage() + "\n" + e);
+        }
+        return null;
     }
 
     private static class EventMapper implements RowMapper {
@@ -149,10 +170,24 @@ public class DbService {
         return -1;
     }
 
-    public List<Event> getEvents (String producer) {return getEvents (producer,0,10);}
+    public List<Event> getEvents (String producer) {
+        assert (dbTemplate != null);
+        String sql = "select * from events where producer=? order by creation_date desc, similarity asc";
+        logger.info("DBService | getEvents() | Executing query: "+sql);
+        try{
+            return (List<Event>) dbTemplate.query(sql, new Object[]{producer}, new EventMapper());
+        }catch (Exception e){
+            for (StackTraceElement elem : e.getStackTrace()) {
+                logger.error(elem);
+            }
+            logger.error("DBService | getEvents() | EXCEPTION:\n" + e.getMessage() + "\n" + e);
+        }
+        return new ArrayList<>();
+    }
+
     public List<Event> getEvents (String producer, Integer threshold, Integer limit) {
         assert (dbTemplate != null);
-        String sql = "select * from events where producer=? and similarity<? order by creation_date asc, similarity desc limit ?";
+        String sql = "select * from events where producer=? and similarity<? order by creation_date desc, similarity asc limit ?";
         logger.info("DBService | getEvents() | Executing query: "+sql);
         try{
             return (List<Event>) dbTemplate.query(sql, new Object[]{producer,threshold,limit}, new EventMapper());

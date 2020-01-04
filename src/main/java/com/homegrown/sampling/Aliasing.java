@@ -16,18 +16,27 @@ public class Aliasing {
         String debugMsg = "compute::";
         ApplicationContext ctx = new ClassPathXmlApplicationContext("producerContext.xml");
         Properties appProperties = (Properties) ctx.getBean("appProperties");
-        String recordingsDirectory = appProperties.getProperty("recordingsDirectory");
+
+        String recordingsDirectory = "/tmp/";
+        Boolean saveOnDisk = false;
+        try{
+            recordingsDirectory = appProperties.getProperty("recordingsDirectory");
+            saveOnDisk = Boolean.parseBoolean(appProperties.getProperty("saveOnDisk"));
+        }catch (Exception e){
+            for (StackTraceElement elem : e.getStackTrace()) {
+                logger.error(elem);
+            }
+            logger.error(debugMsg+e.getMessage());
+        }
         int samplesNumber = Integer.parseInt(appProperties.getProperty("samplesNumber"));
 
         for  (int counter=1; Math.abs(fs2-fs1)>50.0f; ++counter) {
-            byte[] sample1 = sampler.record (fs1,samplesNumber,recordingsDirectory);
+            byte[] sample1 = sampler.record (fs1,samplesNumber,recordingsDirectory,saveOnDisk);
             if (getMin(sample1) == getMax(sample1)) {
                 fs1 = 2 * fs1;
                 continue;
             }
-            byte[] sample2 = sampler.record (fs2,samplesNumber,recordingsDirectory);
-
-            //int N1 = Integer.parseInt(appProperties.getProperty("transformationSize"));
+            byte[] sample2 = sampler.record (fs2,samplesNumber,recordingsDirectory,saveOnDisk);
             int N2 = (int)Math.ceil(N1*fs2/fs1);
 
             double[] fft1 = sampler.powerSpectrum(sampler.normalizeQuantiz(sample1),N1);
