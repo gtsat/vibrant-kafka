@@ -9,7 +9,7 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 		<springframework.version>4.3.25.RELEASE</springframework.version>
-		<jackson.version>2.10.1</jackson.version>
+		<jackson.version>2.13.4.1</jackson.version>
 	</properties>
 	<name>vibrant-kafka</name>
 	<url>http://maven.apache.org</url>
